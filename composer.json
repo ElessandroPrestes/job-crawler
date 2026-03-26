@@ -1,0 +1,46 @@
+{
+    "name": "amura/job-crawler",
+    "description": "Crawler de vagas de emprego com API REST, notificações por e-mail e documentação OpenAPI.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "guzzlehttp/guzzle": "^7.8",
+        "monolog/monolog": "^3.5",
+        "phpmailer/phpmailer": "^6.9",
+        "symfony/css-selector": "^7.0",
+        "symfony/dom-crawler": "^7.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "phpunit/phpunit": "^11.0",
+        "zircote/swagger-php": "^4.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --configuration phpunit.xml",
+        "test:unit": "phpunit --testsuite Unit",
+        "test:integration": "phpunit --testsuite Integration",
+        "test:feature": "phpunit --testsuite Feature",
+        "test:coverage": "phpunit --configuration phpunit.xml --coverage-html coverage/ --coverage-clover coverage/clover.xml",
+        "analyse": "phpstan analyse src --level=8",
+        "audit": "composer audit",
+        "swagger:generate": "./vendor/bin/openapi src -o docs/swagger/openapi.yaml --format yaml",
+        "swagger:validate": "npx --yes swagger-cli validate docs/swagger/openapi.yaml"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {}
+    }
+}
