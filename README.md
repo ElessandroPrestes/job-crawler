@@ -1,92 +1,357 @@
 # Job Crawler
 
-API RESTful para coleta, consulta e exportação de vagas de emprego, com notificações por e-mail e documentação OpenAPI.
+API RESTful para coleta automatizada, consulta e exportação de vagas de emprego.
+Suporta múltiplas fontes (LinkedIn, Indeed, drivers customizados), notificações por e-mail e documentação interativa via Swagger UI.
 
-[![CI](https://github.com/amura/job-crawler/actions/workflows/ci.yml/badge.svg)](https://github.com/amura/job-crawler/actions/workflows/ci.yml)
+[![CI](https://github.com/ElessandroPrestes/job-crawler/actions/workflows/ci.yml/badge.svg)](https://github.com/ElessandroPrestes/job-crawler/actions/workflows/ci.yml)
+[![PHP](https://img.shields.io/badge/PHP-8.2-8892BF)](https://www.php.net)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+---
+
+## Índice
+
+- [Funcionalidades](#funcionalidades)
+- [Stack](#stack)
+- [Pré-requisitos](#pré-requisitos)
+- [Instalação e execução local](#instalação-e-execução-local)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Endpoints da API](#endpoints-da-api)
+- [Exemplos de uso](#exemplos-de-uso)
+- [Testes](#testes)
+- [Scripts CLI](#scripts-cli)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [Segurança](#segurança)
+- [CI/CD](#cicd)
+
+---
+
+## Funcionalidades
+
+- **Crawling multi-fonte** — coleta vagas do LinkedIn, Indeed e URLs customizadas
+- **API RESTful** — listagem paginada, filtros por keyword, localização, tipo de contrato e fonte
+- **Alertas por e-mail** — notificações automáticas ao detectar vagas que correspondem a filtros cadastrados
+- **Exportação** — download das vagas em CSV ou JSON com os mesmos filtros da listagem
+- **Swagger UI** — documentação interativa disponível em `/docs`
+- **Health check** — endpoint `/health` com verificação de banco e storage
+- **Rate limiting** — controle de requisições por IP com headers `X-RateLimit-*`
+- **Segurança** — OWASP Top 10 aplicado em todas as camadas
 
 ---
 
 ## Stack
 
-| Componente | Tecnologia |
-|------------|-----------|
-| Runtime    | PHP 8.2 |
-| Web Server | Nginx 1.25 |
-| Banco      | MySQL 8.0 |
-| Ambiente   | Docker / Compose |
-| Docs       | OpenAPI 3.1 + Swagger UI |
-| E-mail (dev) | MailHog |
+| Componente     | Tecnologia               |
+|----------------|--------------------------|
+| Runtime        | PHP 8.2                  |
+| Web Server     | Nginx 1.25               |
+| Banco de dados | MySQL 8.0                |
+| Ambiente       | Docker + Docker Compose  |
+| Documentação   | OpenAPI 3.1 + Swagger UI |
+| E-mail (dev)   | MailHog                  |
+| Testes         | PHPUnit 11               |
+| Análise estática | PHPStan level 8        |
 
 ---
 
-## Setup rápido
+## Pré-requisitos
+
+- [Docker](https://docs.docker.com/get-docker/) 24+
+- [Docker Compose](https://docs.docker.com/compose/) v2+
+- Git
+
+> Não é necessário PHP, Composer ou qualquer outra dependência instalada localmente.
+
+---
+
+## Instalação e execução local
+
+### 1. Clone o repositório
+
+```bash
+git clone git@github.com:ElessandroPrestes/job-crawler.git
+cd job-crawler
+```
+
+### 2. Configure o ambiente
 
 ```bash
 cp .env.example .env
+```
+
+> As configurações padrão do `.env.example` funcionam diretamente com o Docker Compose.
+> Edite apenas se precisar alterar portas ou credenciais.
+
+### 3. Suba os containers
+
+```bash
 docker compose up -d --build
 ```
 
-Aguarde os healthchecks e acesse:
-
-| Serviço | URL |
-|---------|-----|
-| API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/docs |
-| MailHog | http://localhost:8025 |
-
----
-
-## Endpoints
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/health` | Health check |
-| GET | `/api/jobs` | Listar vagas (paginado) |
-| GET | `/api/jobs/{id}` | Detalhe de vaga |
-| POST | `/api/crawl` | Disparar crawl |
-| GET | `/api/crawl/logs` | Histórico de execuções |
-| GET | `/api/alerts` | Listar filtros de alerta |
-| POST | `/api/alerts` | Criar filtro de alerta |
-| DELETE | `/api/alerts/{id}` | Remover filtro |
-| GET | `/api/export` | Exportar vagas (csv/json) |
-
-Documentação completa em: **http://localhost:8080/docs**
-
----
-
-## Comandos
+Aguarde todos os healthchecks ficarem `healthy` (~30 segundos):
 
 ```bash
-# Ambiente
-docker compose up -d --build
-docker compose exec app bash
+docker compose ps
+```
 
-# Dependências e análise
-docker compose exec app composer install
-docker compose exec app composer analyse
-docker compose exec app composer audit
+### 4. Acesse os serviços
 
-# Testes
+| Serviço      | URL                          |
+|--------------|------------------------------|
+| API          | http://localhost:8080        |
+| Swagger UI   | http://localhost:8080/docs   |
+| MailHog (UI) | http://localhost:8025        |
+
+### 5. Verifique a instalação
+
+```bash
+curl http://localhost:8080/health
+```
+
+Resposta esperada:
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "version": "1.0.0",
+    "checks": {
+      "database": "ok",
+      "storage": "ok"
+    }
+  }
+}
+```
+
+---
+
+## Variáveis de ambiente
+
+Copie `.env.example` para `.env` e ajuste conforme necessário:
+
+| Variável               | Padrão                  | Descrição                              |
+|------------------------|-------------------------|----------------------------------------|
+| `APP_ENV`              | `development`           | Ambiente da aplicação                  |
+| `APP_DEBUG`            | `false`                 | Exibe stack trace nas respostas        |
+| `DB_HOST`              | `mysql`                 | Host do banco de dados                 |
+| `DB_DATABASE`          | `job_crawler`           | Nome do banco                          |
+| `DB_USERNAME`          | `crawler`               | Usuário do banco                       |
+| `DB_PASSWORD`          | `crawlersecret`         | Senha do banco                         |
+| `MAIL_HOST`            | `mailhog`               | Host SMTP                              |
+| `MAIL_PORT`            | `1025`                  | Porta SMTP                             |
+| `MAIL_FROM_ADDRESS`    | `noreply@jobcrawler.local` | Remetente dos e-mails               |
+| `CRAWL_DELAY_MS`       | `1500`                  | Delay entre requests do crawler (ms)   |
+| `CRAWL_ALLOWED_DOMAINS`| `linkedin.com,indeed.com` | Whitelist de domínios para crawl     |
+
+---
+
+## Endpoints da API
+
+| Método   | Rota                  | Status | Descrição                        |
+|----------|-----------------------|--------|----------------------------------|
+| `GET`    | `/health`             | 200    | Health check                     |
+| `GET`    | `/api/jobs`           | 200    | Listar vagas com filtros e paginação |
+| `GET`    | `/api/jobs/{id}`      | 200    | Detalhe de uma vaga              |
+| `POST`   | `/api/crawl`          | 200    | Disparar crawl síncrono          |
+| `GET`    | `/api/crawl/logs`     | 200    | Histórico de execuções           |
+| `GET`    | `/api/alerts`         | 200    | Listar filtros de alerta         |
+| `POST`   | `/api/alerts`         | 201    | Criar filtro de alerta           |
+| `DELETE` | `/api/alerts/{id}`    | 200    | Remover filtro de alerta         |
+| `GET`    | `/api/export`         | 200    | Exportar vagas em CSV ou JSON    |
+| `GET`    | `/docs`               | 200    | Swagger UI                       |
+
+### Parâmetros de paginação e filtro (`GET /api/jobs`)
+
+| Parâmetro       | Tipo   | Descrição                          |
+|-----------------|--------|------------------------------------|
+| `page`          | int    | Página (padrão: 1)                 |
+| `per_page`      | int    | Itens por página (máx: 100, padrão: 20) |
+| `keyword`       | string | Busca em título, empresa e requisitos |
+| `location`      | string | Filtro por localização (busca parcial) |
+| `source`        | string | `linkedin`, `indeed`, `custom`     |
+| `contract_type` | string | `CLT`, `PJ`, `Remote`, `Hybrid`    |
+| `since`         | string | Data mínima ISO 8601               |
+
+### Envelope de resposta
+
+**Sucesso:**
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": {
+    "total": 248,
+    "page": 1,
+    "per_page": 20,
+    "last_page": 13
+  }
+}
+```
+
+**Erro:**
+```json
+{
+  "success": false,
+  "error": "Vaga não encontrada.",
+  "code": 404
+}
+```
+
+---
+
+## Exemplos de uso
+
+### Listar vagas de PHP em São Paulo
+
+```bash
+curl "http://localhost:8080/api/jobs?keyword=PHP&location=São+Paulo&per_page=10"
+```
+
+### Disparar crawl
+
+```bash
+curl -X POST http://localhost:8080/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "linkedin",
+    "keyword": "PHP Developer",
+    "location": "São Paulo",
+    "max_pages": 3
+  }'
+```
+
+### Criar alerta de e-mail
+
+```bash
+curl -X POST http://localhost:8080/api/alerts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "dev@exemplo.com.br",
+    "keywords": ["PHP", "Laravel", "Backend"],
+    "locations": ["São Paulo", "Remote"],
+    "contract_types": ["PJ", "CLT"]
+  }'
+```
+
+### Exportar vagas em CSV
+
+```bash
+curl "http://localhost:8080/api/export?format=csv&keyword=PHP" -o vagas.csv
+```
+
+### Exportar vagas em JSON
+
+```bash
+curl "http://localhost:8080/api/export?format=json&source=linkedin" -o vagas.json
+```
+
+---
+
+## Testes
+
+```bash
+# Todos os testes
 docker compose exec app composer test
+
+# Apenas unitários
+docker compose exec app composer test:unit
+
+# Apenas integração
+docker compose exec app composer test:integration
+
+# Com relatório de cobertura (HTML em /coverage)
 docker compose exec app composer test:coverage
+```
 
-# Swagger
-docker compose exec app ./vendor/bin/openapi src -o docs/swagger/openapi.yaml
+> Os testes de integração e feature usam SQLite in-memory — sem dependência do MySQL.
+> Cobertura mínima exigida: **70%**.
 
-# Scripts CLI
-docker compose exec app php scripts/crawl.php --source=linkedin --keyword="PHP Developer"
-docker compose exec app php scripts/export.php --format=csv --output=/tmp/jobs.csv
+---
+
+## Scripts CLI
+
+Execute dentro do container:
+
+```bash
+# Disparar crawl manualmente
+docker compose exec app php scripts/crawl.php \
+  --source=linkedin \
+  --keyword="PHP Developer" \
+  --location="Remote" \
+  --max-pages=5
+
+# Exportar vagas para arquivo
+docker compose exec app php scripts/export.php \
+  --format=csv \
+  --output=/var/www/html/storage/exports/vagas.csv
+
+# Executar migrations pendentes
 docker compose exec app php scripts/migrate.php
+
+# Disparar notificações de e-mail manualmente
 docker compose exec app php scripts/notify.php
+```
+
+Todos os scripts aceitam `--help` para ver as opções disponíveis.
+
+---
+
+## Estrutura do projeto
+
+```
+job-crawler/
+├── public/             # Front controller (index.php)
+├── src/
+│   ├── Config/         # App e Database
+│   ├── Controllers/    # HealthController, JobController, etc.
+│   ├── Exceptions/     # HttpException, ValidationException, CrawlerException
+│   ├── Http/           # Request e JsonResponse
+│   ├── Middleware/     # RateLimiter, InputSanitizer, CsrfGuard
+│   ├── Models/         # Job, CrawlLog, AlertFilter
+│   ├── Repositories/   # Acesso ao banco via PDO
+│   ├── Services/       # CrawlerService, EmailService, ExportService
+│   │   └── Drivers/    # LinkedInDriver, IndeedDriver, CustomDriver
+│   └── Router.php
+├── tests/
+│   ├── Unit/           # Testes sem dependências externas
+│   ├── Integration/    # Testes com SQLite in-memory
+│   └── Feature/        # Testes de comportamento da API
+├── docs/
+│   ├── swagger/        # openapi.yaml + Swagger UI
+│   ├── api.md          # Guia de uso com exemplos curl
+│   └── deploy.md       # Guia de deploy em produção
+├── scripts/            # CLI: crawl, export, migrate, notify
+├── nginx/              # nginx.conf + security-headers.conf
+├── mysql/              # init.sql + my.cnf
+├── docker/             # php.ini customizado
+├── .github/workflows/  # CI, CD e auditoria de segurança
+├── docker-compose.yml
+├── Dockerfile
+└── .env.example
 ```
 
 ---
 
 ## Segurança
 
-- OWASP Top 10 aplicado (ver `Claude.md`)
-- Rate limiting por IP via APCu
-- Prepared statements em todas as queries
-- Headers de segurança via Nginx
-- Whitelist de domínios para crawl (anti-SSRF)
-- `composer audit` no CI a cada push
+| Risco OWASP         | Mitigação aplicada                                              |
+|---------------------|-----------------------------------------------------------------|
+| A03 — Injection     | PDO com prepared statements; zero concatenação SQL             |
+| A05 — Misconfiguration | `server_tokens off`; `.env` fora do VCS; headers via Nginx |
+| A06 — Vulnerable Components | `composer audit` no CI a cada push e semanalmente   |
+| A07 — Auth Failures | Rate limiting por IP; CSRF com `random_bytes(32)`              |
+| A09 — Logging       | Monolog em arquivo; nunca loga senhas, tokens ou PII           |
+| A10 — SSRF          | URLs de crawl validadas contra whitelist de domínios           |
+
+---
+
+## CI/CD
+
+| Pipeline        | Trigger               | Jobs                                          |
+|-----------------|-----------------------|-----------------------------------------------|
+| `ci.yml`        | Push / Pull Request   | PHPStan level 8, testes (PHP 8.2/8.3), swagger-validate, docker build |
+| `cd.yml`        | Push `main` / tag `v*` | Build + push GHCR, deploy staging/produção  |
+| `security.yml`  | Semanal (segundas)    | `composer audit` + notificação Slack          |
+
+Deploy em produção exige tag semântica (`v1.0.0`) e **aprovação manual** no GitHub Environment.
