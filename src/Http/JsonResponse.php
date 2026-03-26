@@ -6,6 +6,9 @@ namespace App\Http;
 
 final class JsonResponse
 {
+    /** @var (callable(int, array<string,mixed>, array<string,string>): never)|null */
+    public static $onSend = null;
+
     public static function ok(mixed $data, array $meta = [], array $headers = []): never
     {
         self::send(200, ['success' => true, 'data' => $data, 'meta' => $meta ?: null], $headers);
@@ -66,6 +69,10 @@ final class JsonResponse
         }
 
         $payload = array_filter($body, static fn ($v) => $v !== null);
+
+        if (self::$onSend !== null) {
+            (self::$onSend)($status, $payload, $extraHeaders);
+        }
 
         echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;

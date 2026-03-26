@@ -4,136 +4,211 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Repositories;
 
-use App\Config\Database;
 use App\Repositories\JobRepository;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\DatabaseTestCase;
 
-final class JobRepositoryTest extends TestCase
+final class JobRepositoryTest extends DatabaseTestCase
 {
     private JobRepository $repo;
 
     protected function setUp(): void
     {
-        Database::reset();
-        $pdo = Database::connection();
-        $this->migrate($pdo);
+        parent::setUp();
         $this->repo = new JobRepository();
     }
 
-    protected function tearDown(): void
-    {
-        Database::reset();
-    }
+    // ── upsert ──────────────────────────────────────────────────────────────
 
-    private function migrate(\PDO $pdo): void
+    public function testUpsertInsertsNewRowAndReturnsId(): void
     {
-        $pdo->exec('
-            CREATE TABLE IF NOT EXISTS jobs (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                external_id   TEXT    NOT NULL,
-                source        TEXT    NOT NULL,
-                title         TEXT    NOT NULL,
-                company       TEXT    NOT NULL,
-                location      TEXT,
-                contract_type TEXT,
-                description   TEXT,
-                requirements  TEXT,
-                salary_range  TEXT,
-                url           TEXT    NOT NULL DEFAULT \'\',
-                published_at  TEXT,
-                scraped_at    TEXT    NOT NULL DEFAULT (datetime(\'now\')),
-                is_notified   INTEGER NOT NULL DEFAULT 0,
-                UNIQUE (source, external_id)
-            )
-        ');
-    }
-
-    private function insertJob(array $overrides = []): int
-    {
-        return $this->repo->upsert(array_merge([
-            'external_id' => 'ext-' . uniqid(),
-            'source'      => 'linkedin',
-            'title'       => 'PHP Developer',
-            'company'     => 'Tech Corp',
-            'location'    => 'São Paulo',
-            'url'         => 'https://linkedin.com/jobs/1',
-        ], $overrides));
-    }
-
-    public function testUpsertInsertsNewJob(): void
-    {
-        $id = $this->insertJob();
+        $id = $this->insert();
 
         $this->assertGreaterThan(0, $id);
     }
 
-    public function testFindByIdReturnsJob(): void
+    public function testUpsertDoesNotCreateDuplicateForSameSourceAndExternalId(): void
     {
-        $id  = $this->insertJob(['title' => 'Unique Title']);
-        $job = $this->repo->findById($id);
+        $this->insert(['external_id' => 'dup-001', 'source' => 'linkedin']);
+        $this->insert(['external_id' => 'dup-001', 'source' => 'linkedin']);
 
-        $this->assertNotNull($job);
-        $this->assertSame('Unique Title', $job->title);
+        $this->assertSame(1, $this->repo->count());
     }
 
-    public function testFindByIdReturnsNullForMissingJob(): void
+    public function testUpsertUpdatesExistingFieldsOnConflict(): void
     {
-        $job = $this->repo->findById(99999);
+        $this->insert(['external_id' => 'upd-001', 'source' => 'indeed', 'title' => 'Old Title']);
+        $this->insert(['external_id' => 'upd-001', 'source' => 'indeed', 'title' => 'New Title']);
 
-        $this->assertNull($job);
+        $job = $this->repo->findAll()[0];
+
+        $this->assertSame('New Title', $job->title);
+        $this->assertSame(1, $this->repo->count());
     }
 
-    public function testFindAllReturnsPaginatedResults(): void
+    public function testUpsertSameSourceDifferentExternalIdCreatesTwoRows(): void
     {
-        $this->insertJob(['title' => 'Job A']);
-        $this->insertJob(['title' => 'Job B']);
-        $this->insertJob(['title' => 'Job C']);
-
-        $page1 = $this->repo->findAll([], 1, 2);
-        $page2 = $this->repo->findAll([], 2, 2);
-
-        $this->assertCount(2, $page1);
-        $this->assertCount(1, $page2);
-    }
-
-    public function testCountReturnsTotal(): void
-    {
-        $this->insertJob();
-        $this->insertJob();
+        $this->insert(['external_id' => 'a', 'source' => 'linkedin']);
+        $this->insert(['external_id' => 'b', 'source' => 'linkedin']);
 
         $this->assertSame(2, $this->repo->count());
     }
 
-    public function testFindAllWithKeywordFilter(): void
+    // ── findById ────────────────────────────────────────────────────────────
+
+    public function testFindByIdReturnsCorrectJob(): void
     {
-        $this->insertJob(['title' => 'PHP Developer']);
-        $this->insertJob(['title' => 'Java Developer']);
+        $id  = $this->insert(['title' => 'Unique Title Here']);
+        $job = $this->repo->findById($id);
 
-        $results = $this->repo->findAll(['keyword' => 'PHP']);
-
-        $this->assertCount(1, $results);
-        $this->assertSame('PHP Developer', $results[0]->title);
+        $this->assertNotNull($job);
+        $this->assertSame('Unique Title Here', $job->title);
+        $this->assertSame($id, $job->id);
     }
 
-    public function testFindUnnotifiedReturnsOnlyUnnotified(): void
+    public function testFindByIdReturnsNullForUnknownId(): void
     {
-        $idA = $this->insertJob(['title' => 'Job A']);
-        $idB = $this->insertJob(['title' => 'Job B']);
+        $this->assertNull($this->repo->findById(99999));
+    }
 
-        $this->repo->markNotified([$idA]);
+    // ── findAll + pagination ─────────────────────────────────────────────────
+
+    public function testFindAllReturnsAllJobsOrderedByScrapedAtDesc(): void
+    {
+        $this->insert(['title' => 'Job A']);
+        $this->insert(['title' => 'Job B']);
+        $this->insert(['title' => 'Job C']);
+
+        $jobs = $this->repo->findAll();
+
+        $this->assertCount(3, $jobs);
+    }
+
+    public function testPaginationPage2ReturnsDifferentItemsThanPage1(): void
+    {
+        for ($i = 1; $i <= 5; $i++) {
+            $this->insert(['title' => "Job {$i}"]);
+        }
+
+        $page1 = $this->repo->findAll([], 1, 2);
+        $page2 = $this->repo->findAll([], 2, 2);
+        $page3 = $this->repo->findAll([], 3, 2);
+
+        $this->assertCount(2, $page1);
+        $this->assertCount(2, $page2);
+        $this->assertCount(1, $page3);
+        $this->assertNotSame($page1[0]->id, $page2[0]->id);
+    }
+
+    // ── filters ─────────────────────────────────────────────────────────────
+
+    #[DataProvider('filterProvider')]
+    public function testFindAllAppliesFilterCorrectly(array $seed, array $filter, int $expectedCount): void
+    {
+        foreach ($seed as $row) {
+            $this->insert($row);
+        }
+
+        $results = $this->repo->findAll($filter);
+
+        $this->assertCount($expectedCount, $results);
+    }
+
+    public static function filterProvider(): array
+    {
+        return [
+            'keyword matches title' => [
+                [['title' => 'PHP Developer'], ['title' => 'Java Developer']],
+                ['keyword' => 'PHP'],
+                1,
+            ],
+            'keyword matches requirements' => [
+                [['title' => 'Backend', 'requirements' => 'PHP, Laravel'], ['title' => 'Frontend', 'requirements' => 'React']],
+                ['keyword' => 'Laravel'],
+                1,
+            ],
+            'location partial match' => [
+                [['location' => 'São Paulo, SP'], ['location' => 'Rio de Janeiro']],
+                ['location' => 'São Paulo'],
+                1,
+            ],
+            'source filter' => [
+                [['source' => 'linkedin'], ['source' => 'indeed']],
+                ['source' => 'linkedin'],
+                1,
+            ],
+            'contract_type filter' => [
+                [['contract_type' => 'PJ'], ['contract_type' => 'CLT']],
+                ['contract_type' => 'PJ'],
+                1,
+            ],
+            'no results for unknown keyword' => [
+                [['title' => 'PHP Developer']],
+                ['keyword' => 'Cobol'],
+                0,
+            ],
+        ];
+    }
+
+    public function testCountReflectsActiveFilters(): void
+    {
+        $this->insert(['source' => 'linkedin']);
+        $this->insert(['source' => 'linkedin']);
+        $this->insert(['source' => 'indeed']);
+
+        $this->assertSame(3, $this->repo->count());
+        $this->assertSame(2, $this->repo->count(['source' => 'linkedin']));
+        $this->assertSame(1, $this->repo->count(['source' => 'indeed']));
+    }
+
+    // ── notifications ────────────────────────────────────────────────────────
+
+    public function testFindUnnotifiedSkipsAlreadyNotifiedJobs(): void
+    {
+        $idA = $this->insert(['title' => 'Job A']);
+        $idB = $this->insert(['title' => 'Job B']);
+        $idC = $this->insert(['title' => 'Job C']);
+
+        $this->repo->markNotified([$idA, $idB]);
 
         $unnotified = $this->repo->findUnnotified();
 
         $this->assertCount(1, $unnotified);
-        $this->assertSame($idB, $unnotified[0]->id);
+        $this->assertSame($idC, $unnotified[0]->id);
     }
 
-    public function testMarkNotifiedUpdatesFlag(): void
+    public function testMarkNotifiedFlipsIsNotifiedToTrue(): void
     {
-        $id  = $this->insertJob();
-        $this->repo->markNotified([$id]);
-        $job = $this->repo->findById($id);
+        $id = $this->insert();
 
-        $this->assertTrue($job->isNotified);
+        $this->assertFalse($this->repo->findById($id)->isNotified);
+
+        $this->repo->markNotified([$id]);
+
+        $this->assertTrue($this->repo->findById($id)->isNotified);
+    }
+
+    public function testMarkNotifiedWithEmptyArrayDoesNothing(): void
+    {
+        $id = $this->insert();
+
+        $this->repo->markNotified([]);
+
+        $this->assertFalse($this->repo->findById($id)->isNotified);
+    }
+
+    // ── helpers ─────────────────────────────────────────────────────────────
+
+    private function insert(array $overrides = []): int
+    {
+        return $this->repo->upsert(array_merge([
+            'external_id'   => 'ext-' . uniqid(),
+            'source'        => 'linkedin',
+            'title'         => 'PHP Developer',
+            'company'       => 'Tech Corp',
+            'location'      => 'São Paulo',
+            'contract_type' => 'PJ',
+            'url'           => 'https://linkedin.com/jobs/1',
+        ], $overrides));
     }
 }

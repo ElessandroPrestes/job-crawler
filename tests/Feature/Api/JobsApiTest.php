@@ -4,129 +4,127 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Config\Database;
-use App\Repositories\JobRepository;
-use PHPUnit\Framework\TestCase;
+use Tests\Support\ApplicationTestCase;
 
-final class JobsApiTest extends TestCase
+final class JobsApiTest extends ApplicationTestCase
 {
-    private JobRepository $repo;
+    // ── Contract: envelope ───────────────────────────────────────────────────
 
-    protected function setUp(): void
+    public function testIndexReturns200WithSuccessEnvelope(): void
     {
-        Database::reset();
-        $pdo = Database::connection();
-        $this->migrate($pdo);
-        $this->repo = new JobRepository();
+        $r = $this->get('/api/jobs');
+
+        $this->assertSame(200, $r->status);
+        $this->assertTrue($r->isSuccessful());
+        $this->assertIsArray($r->data());
     }
 
-    protected function tearDown(): void
+    public function testIndexIncludesPaginationMetaFields(): void
     {
-        Database::reset();
+        $r    = $this->get('/api/jobs');
+        $meta = $r->meta();
+
+        $this->assertNotNull($meta);
+        $this->assertArrayHasKey('total', $meta);
+        $this->assertArrayHasKey('page', $meta);
+        $this->assertArrayHasKey('per_page', $meta);
+        $this->assertArrayHasKey('last_page', $meta);
     }
 
-    private function migrate(\PDO $pdo): void
+    public function testIndexMetaReflectsActualCount(): void
     {
-        $pdo->exec('
-            CREATE TABLE IF NOT EXISTS jobs (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                external_id   TEXT    NOT NULL,
-                source        TEXT    NOT NULL,
-                title         TEXT    NOT NULL,
-                company       TEXT    NOT NULL,
-                location      TEXT,
-                contract_type TEXT,
-                description   TEXT,
-                requirements  TEXT,
-                salary_range  TEXT,
-                url           TEXT    NOT NULL DEFAULT \'\',
-                published_at  TEXT,
-                scraped_at    TEXT    NOT NULL DEFAULT (datetime(\'now\')),
-                is_notified   INTEGER NOT NULL DEFAULT 0,
-                UNIQUE (source, external_id)
-            )
-        ');
+        $this->seedJob(['title' => 'Job A']);
+        $this->seedJob(['title' => 'Job B']);
+
+        $r = $this->get('/api/jobs');
+
+        $this->assertSame(2, $r->meta()['total']);
     }
 
-    private function seed(): void
-    {
-        $this->repo->upsert([
-            'external_id'   => 'ext-001',
-            'source'        => 'linkedin',
-            'title'         => 'PHP Developer',
-            'company'       => 'Tech Corp',
-            'location'      => 'São Paulo',
-            'contract_type' => 'PJ',
-            'url'           => 'https://linkedin.com/jobs/1',
-        ]);
+    // ── Pagination ───────────────────────────────────────────────────────────
 
-        $this->repo->upsert([
-            'external_id'   => 'ext-002',
-            'source'        => 'indeed',
-            'title'         => 'Java Developer',
-            'company'       => 'Other Corp',
-            'location'      => 'Rio de Janeiro',
-            'contract_type' => 'CLT',
-            'url'           => 'https://indeed.com/jobs/2',
-        ]);
+    public function testIndexRespectsPerPageParam(): void
+    {
+        for ($i = 1; $i <= 5; $i++) {
+            $this->seedJob(['title' => "Job {$i}"]);
+        }
+
+        $r = $this->get('/api/jobs', ['per_page' => 2]);
+
+        $this->assertCount(2, $r->data());
+        $this->assertSame(5, $r->meta()['total']);
+        $this->assertSame(3, $r->meta()['last_page']);
     }
 
-    public function testFindAllReturnsAllJobs(): void
+    public function testIndexPage2ReturnsDifferentItems(): void
     {
-        $this->seed();
+        for ($i = 1; $i <= 4; $i++) {
+            $this->seedJob(['title' => "Job {$i}"]);
+        }
 
-        $jobs = $this->repo->findAll();
+        $page1 = $this->get('/api/jobs', ['per_page' => 2, 'page' => 1]);
+        $page2 = $this->get('/api/jobs', ['per_page' => 2, 'page' => 2]);
 
-        $this->assertCount(2, $jobs);
+        $ids1 = array_column($page1->data(), 'id');
+        $ids2 = array_column($page2->data(), 'id');
+
+        $this->assertEmpty(array_intersect($ids1, $ids2));
     }
 
-    public function testCountReturnsCorrectTotal(): void
-    {
-        $this->seed();
+    // ── Filters ──────────────────────────────────────────────────────────────
 
-        $this->assertSame(2, $this->repo->count());
+    public function testIndexFilterByKeywordReturnsOnlyMatching(): void
+    {
+        $this->seedJob(['title' => 'PHP Developer']);
+        $this->seedJob(['title' => 'Java Developer']);
+
+        $r = $this->get('/api/jobs', ['keyword' => 'PHP']);
+
+        $this->assertCount(1, $r->data());
+        $this->assertSame('PHP Developer', $r->data()[0]['title']);
     }
 
-    public function testFilterBySource(): void
+    public function testIndexFilterBySourceReturnsOnlyMatching(): void
     {
-        $this->seed();
+        $this->seedJob(['source' => 'linkedin']);
+        $this->seedJob(['source' => 'indeed']);
 
-        $jobs = $this->repo->findAll(['source' => 'linkedin']);
+        $r = $this->get('/api/jobs', ['source' => 'indeed']);
 
-        $this->assertCount(1, $jobs);
-        $this->assertSame('linkedin', $jobs[0]->source);
+        $this->assertCount(1, $r->data());
+        $this->assertSame('indeed', $r->data()[0]['source']);
     }
 
-    public function testFilterByContractType(): void
+    // ── Show ─────────────────────────────────────────────────────────────────
+
+    public function testShowReturns200ForExistingJob(): void
     {
-        $this->seed();
+        $id = $this->seedJob(['title' => 'Backend Engineer']);
 
-        $jobs = $this->repo->findAll(['contract_type' => 'PJ']);
+        $r = $this->get("/api/jobs/{$id}");
 
-        $this->assertCount(1, $jobs);
-        $this->assertSame('PJ', $jobs[0]->contractType);
+        $this->assertSame(200, $r->status);
+        $this->assertTrue($r->isSuccessful());
+        $this->assertSame('Backend Engineer', $r->data()['title']);
     }
 
-    public function testFindByIdReturnsCorrectJob(): void
+    public function testShowReturns404ForUnknownId(): void
     {
-        $this->seed();
+        $r = $this->get('/api/jobs/99999');
 
-        $all = $this->repo->findAll();
-        $job = $this->repo->findById($all[0]->id);
-
-        $this->assertNotNull($job);
-        $this->assertSame($all[0]->id, $job->id);
+        $this->assertSame(404, $r->status);
+        $this->assertFalse($r->isSuccessful());
+        $this->assertNotNull($r->error());
     }
 
-    public function testPaginationReturnsCorrectPage(): void
+    public function testShowResponseContainsExpectedFields(): void
     {
-        $this->seed();
+        $id = $this->seedJob();
+        $r  = $this->get("/api/jobs/{$id}");
+        $d  = $r->data();
 
-        $page1 = $this->repo->findAll([], 1, 1);
-        $page2 = $this->repo->findAll([], 2, 1);
-
-        $this->assertCount(1, $page1);
-        $this->assertCount(1, $page2);
-        $this->assertNotSame($page1[0]->id, $page2[0]->id);
+        foreach (['id', 'title', 'company', 'source', 'url', 'scraped_at', 'is_notified'] as $field) {
+            $this->assertArrayHasKey($field, $d, "Missing field: {$field}");
+        }
     }
 }

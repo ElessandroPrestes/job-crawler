@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Middleware;
 
 use App\Middleware\InputSanitizer;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class InputSanitizerTest extends TestCase
@@ -16,48 +17,97 @@ final class InputSanitizerTest extends TestCase
         $this->sanitizer = new InputSanitizer();
     }
 
-    public function testStripsNulBytes(): void
-    {
-        $result = $this->sanitizer->sanitize("hello\0world");
+    // ── NUL bytes ───────────────────────────────────────────────────────────
 
-        $this->assertSame('helloworld', $result);
+    #[DataProvider('nullByteProvider')]
+    public function testStripsNullBytes(string $input, string $expected): void
+    {
+        $this->assertSame($expected, $this->sanitizer->sanitize($input));
     }
 
-    public function testTrimsWhitespace(): void
+    public static function nullByteProvider(): array
     {
-        $result = $this->sanitizer->sanitize('  hello  ');
-
-        $this->assertSame('hello', $result);
+        return [
+            'single NUL byte'        => ["hello\0world", 'helloworld'],
+            'multiple NUL bytes'     => ["a\0b\0c", 'abc'],
+            'NUL at start'           => ["\0foo", 'foo'],
+            'NUL at end'             => ["foo\0", 'foo'],
+            'only NUL bytes'         => ["\0\0\0", ''],
+        ];
     }
 
-    public function testEscapesHtmlEntities(): void
-    {
-        $result = $this->sanitizer->sanitize('<script>alert("xss")</script>');
+    // ── XSS payloads ────────────────────────────────────────────────────────
 
-        $this->assertStringNotContainsString('<script>', $result);
-        $this->assertStringContainsString('&lt;script&gt;', $result);
+    #[DataProvider('xssPayloadProvider')]
+    public function testEscapesXssPayloads(string $payload): void
+    {
+        $result = $this->sanitizer->sanitize($payload);
+
+        $this->assertStringNotContainsString('<script', $result);
+        $this->assertStringNotContainsString('javascript:', $result);
+        $this->assertStringNotContainsString('onerror=', $result);
     }
+
+    public static function xssPayloadProvider(): array
+    {
+        return [
+            'script tag'             => ['<script>alert("xss")</script>'],
+            'script tag uppercase'   => ['<SCRIPT>alert(1)</SCRIPT>'],
+            'img onerror'            => ['<img src=x onerror=alert(1)>'],
+            'javascript href'        => ['<a href="javascript:alert(1)">click</a>'],
+            'event handler'          => ['<div onload=alert(1)>'],
+        ];
+    }
+
+    // ── Whitespace ──────────────────────────────────────────────────────────
+
+    public function testTrimsLeadingAndTrailingWhitespace(): void
+    {
+        $this->assertSame('hello', $this->sanitizer->sanitize('  hello  '));
+        $this->assertSame('hello', $this->sanitizer->sanitize("\thello\n"));
+    }
+
+    // ── Arrays ──────────────────────────────────────────────────────────────
 
     public function testSanitizesArrayRecursively(): void
     {
-        $input  = ['name' => '  foo  ', 'nested' => ['bar' => "\0baz"]];
+        $input = [
+            'name'   => "  foo\0  ",
+            'nested' => ['bar' => '<script>'],
+        ];
+
         $result = $this->sanitizer->sanitize($input);
 
         $this->assertSame('foo', $result['name']);
-        $this->assertSame('baz', $result['nested']['bar']);
+        $this->assertStringNotContainsString('<script', $result['nested']['bar']);
     }
 
-    public function testPassesThroughNonStringValues(): void
+    // ── Non-string passthrough ───────────────────────────────────────────────
+
+    #[DataProvider('nonStringProvider')]
+    public function testPassesThroughNonStringValuesUnchanged(mixed $input): void
     {
-        $this->assertSame(42, $this->sanitizer->sanitize(42));
-        $this->assertNull($this->sanitizer->sanitize(null));
-        $this->assertTrue($this->sanitizer->sanitize(true));
+        $this->assertSame($input, $this->sanitizer->sanitize($input));
     }
 
-    public function testHandlesMultipleNulBytes(): void
+    public static function nonStringProvider(): array
     {
-        $result = $this->sanitizer->sanitize("a\0b\0c\0d");
+        return [
+            'integer' => [42],
+            'float'   => [3.14],
+            'true'    => [true],
+            'false'   => [false],
+            'null'    => [null],
+        ];
+    }
 
-        $this->assertSame('abcd', $result);
+    // ── Unicode ─────────────────────────────────────────────────────────────
+
+    public function testUnicodeCharactersArePreserved(): void
+    {
+        $input  = 'Desenvolvedor Sênior — São Paulo';
+        $result = $this->sanitizer->sanitize($input);
+
+        $this->assertSame($input, $result);
     }
 }

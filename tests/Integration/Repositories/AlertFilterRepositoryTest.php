@@ -4,82 +4,89 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Repositories;
 
-use App\Config\Database;
 use App\Repositories\AlertFilterRepository;
-use PHPUnit\Framework\TestCase;
+use Tests\Support\DatabaseTestCase;
 
-final class AlertFilterRepositoryTest extends TestCase
+final class AlertFilterRepositoryTest extends DatabaseTestCase
 {
     private AlertFilterRepository $repo;
 
     protected function setUp(): void
     {
-        Database::reset();
-        $pdo = Database::connection();
-        $this->migrate($pdo);
+        parent::setUp();
         $this->repo = new AlertFilterRepository();
     }
 
-    protected function tearDown(): void
-    {
-        Database::reset();
-    }
-
-    private function migrate(\PDO $pdo): void
-    {
-        $pdo->exec('
-            CREATE TABLE IF NOT EXISTS alert_filters (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                email          TEXT    NOT NULL,
-                keywords       TEXT    NOT NULL DEFAULT \'[]\',
-                locations      TEXT,
-                contract_types TEXT,
-                is_active      INTEGER NOT NULL DEFAULT 1,
-                created_at     TEXT    NOT NULL DEFAULT (datetime(\'now\'))
-            )
-        ');
-    }
-
-    public function testCreateReturnsAlertFilter(): void
+    public function testCreatePersistsAllFields(): void
     {
         $filter = $this->repo->create([
-            'email'    => 'dev@test.com',
-            'keywords' => ['PHP', 'Laravel'],
+            'email'          => 'dev@test.com',
+            'keywords'       => ['PHP', 'Laravel'],
+            'locations'      => ['São Paulo', 'Remote'],
+            'contract_types' => ['PJ', 'CLT'],
         ]);
 
         $this->assertGreaterThan(0, $filter->id);
         $this->assertSame('dev@test.com', $filter->email);
         $this->assertSame(['PHP', 'Laravel'], $filter->keywords);
+        $this->assertSame(['São Paulo', 'Remote'], $filter->locations);
+        $this->assertSame(['PJ', 'CLT'], $filter->contractTypes);
+        $this->assertTrue($filter->isActive);
     }
 
-    public function testFindActiveReturnsOnlyActiveFilters(): void
+    public function testCreateWithEmptyOptionalFieldsDefaultsToEmptyArrays(): void
     {
-        $filterA = $this->repo->create(['email' => 'a@test.com', 'keywords' => ['PHP']]);
-        $filterB = $this->repo->create(['email' => 'b@test.com', 'keywords' => ['Java']]);
+        $filter = $this->repo->create(['email' => 'a@test.com', 'keywords' => ['Go']]);
 
-        Database::connection()->exec(
-            "UPDATE alert_filters SET is_active = 0 WHERE id = {$filterB->id}"
-        );
-
-        $active = $this->repo->findActive();
-
-        $this->assertCount(1, $active);
-        $this->assertSame('a@test.com', $active[0]->email);
+        $this->assertSame([], $filter->locations);
+        $this->assertSame([], $filter->contractTypes);
     }
 
-    public function testDeleteRemovesFilter(): void
+    public function testFindAllReturnsAllFiltersRegardlessOfStatus(): void
     {
-        $filter  = $this->repo->create(['email' => 'x@test.com', 'keywords' => ['Go']]);
-        $deleted = $this->repo->delete($filter->id);
+        $this->repo->create(['email' => 'a@test.com', 'keywords' => ['PHP']]);
+        $inactive = $this->repo->create(['email' => 'b@test.com', 'keywords' => ['Go']]);
 
-        $this->assertTrue($deleted);
+        $this->pdo->exec("UPDATE alert_filters SET is_active = 0 WHERE id = {$inactive->id}");
+
+        $all = $this->repo->findAll();
+
+        $this->assertCount(2, $all);
+    }
+
+    public function testFindActiveExcludesInactiveFilters(): void
+    {
+        $this->repo->create(['email' => 'active@test.com', 'keywords' => ['PHP']]);
+        $inactive = $this->repo->create(['email' => 'inactive@test.com', 'keywords' => ['Java']]);
+
+        $this->pdo->exec("UPDATE alert_filters SET is_active = 0 WHERE id = {$inactive->id}");
+
+        $results = $this->repo->findActive();
+
+        $this->assertCount(1, $results);
+        $this->assertSame('active@test.com', $results[0]->email);
+        $this->assertTrue($results[0]->isActive);
+    }
+
+    public function testDeleteRemovesTheFilter(): void
+    {
+        $filter = $this->repo->create(['email' => 'x@test.com', 'keywords' => ['Rust']]);
+
+        $this->assertTrue($this->repo->delete($filter->id));
         $this->assertEmpty($this->repo->findAll());
     }
 
-    public function testDeleteReturnsFalseForMissingFilter(): void
+    public function testDeleteReturnsFalseForNonExistentId(): void
     {
-        $deleted = $this->repo->delete(99999);
+        $this->assertFalse($this->repo->delete(99999));
+    }
 
-        $this->assertFalse($deleted);
+    public function testKeywordsAreDecodedFromJsonString(): void
+    {
+        $filter = $this->repo->create(['email' => 'q@test.com', 'keywords' => ['A', 'B', 'C']]);
+
+        $found = $this->repo->findById($filter->id);
+
+        $this->assertSame(['A', 'B', 'C'], $found->keywords);
     }
 }

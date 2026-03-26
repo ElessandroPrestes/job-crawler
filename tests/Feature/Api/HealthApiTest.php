@@ -4,50 +4,43 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Config\Database;
-use PHPUnit\Framework\TestCase;
+use Tests\Support\ApplicationTestCase;
 
-final class HealthApiTest extends TestCase
+final class HealthApiTest extends ApplicationTestCase
 {
-    protected function setUp(): void
+    public function testReturns200WhenDatabaseIsAvailable(): void
     {
-        Database::reset();
-        $pdo = Database::connection();
-        $pdo->exec('CREATE TABLE IF NOT EXISTS _health_check (id INTEGER PRIMARY KEY)');
+        $r = $this->get('/health');
+
+        $this->assertSame(200, $r->status);
+        $this->assertTrue($r->isSuccessful());
     }
 
-    protected function tearDown(): void
+    public function testResponseContainsStatusField(): void
     {
-        Database::reset();
+        $r = $this->get('/health');
+
+        $this->assertSame('healthy', $r->get('data.status'));
     }
 
-    public function testHealthCheckReturnsHealthyData(): void
+    public function testResponseContainsVersionField(): void
     {
-        $controller = new \App\Controllers\HealthController();
+        $r = $this->get('/health');
 
-        $checks = [
-            'database' => $this->checkDatabase(),
-            'storage'  => $this->checkStorage(),
-        ];
-
-        $this->assertArrayHasKey('database', $checks);
-        $this->assertArrayHasKey('storage', $checks);
-        $this->assertContains($checks['database'], ['ok', 'fail']);
+        $this->assertNotNull($r->get('data.version'));
     }
 
-    private function checkDatabase(): string
+    public function testResponseContainsDatabaseCheck(): void
     {
-        try {
-            Database::connection()->query('SELECT 1');
-            return 'ok';
-        } catch (\Throwable) {
-            return 'fail';
-        }
+        $r = $this->get('/health');
+
+        $this->assertSame('ok', $r->get('data.checks.database'));
     }
 
-    private function checkStorage(): string
+    public function testResponseContainsStorageCheck(): void
     {
-        $dir = sys_get_temp_dir();
-        return (is_dir($dir) && is_writable($dir)) ? 'ok' : 'fail';
+        $r = $this->get('/health');
+
+        $this->assertContains($r->get('data.checks.storage'), ['ok', 'fail']);
     }
 }

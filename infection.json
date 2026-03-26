@@ -1,0 +1,20 @@
+{
+    "$schema": "https://raw.githubusercontent.com/infection/infection/master/src/Configuration/Schema/infection-schema.json",
+    "timeout": 10,
+    "source": {
+        "directories": ["src"],
+        "excludes": ["src/Config"]
+    },
+    "mutators": {
+        "@default": true
+    },
+    "minMsi": 60,
+    "minCoveredMsi": 70,
+    "testFramework": "phpunit",
+    "testFrameworkOptions": "--testsuite=Unit,Integration",
+    "logs": {
+        "text": "infection.log",
+        "html": "infection.html",
+        "summary": "infection-summary.log"
+    }
+}

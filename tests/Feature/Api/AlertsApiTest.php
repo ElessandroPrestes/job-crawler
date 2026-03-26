@@ -4,92 +4,127 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Config\Database;
-use App\Repositories\AlertFilterRepository;
-use PHPUnit\Framework\TestCase;
+use Tests\Support\ApplicationTestCase;
 
-final class AlertsApiTest extends TestCase
+final class AlertsApiTest extends ApplicationTestCase
 {
-    private AlertFilterRepository $repo;
+    // ── GET /api/alerts ──────────────────────────────────────────────────────
 
-    protected function setUp(): void
+    public function testIndexReturns200WithSuccessEnvelope(): void
     {
-        Database::reset();
-        $pdo = Database::connection();
-        $this->migrate($pdo);
-        $this->repo = new AlertFilterRepository();
+        $r = $this->get('/api/alerts');
+
+        $this->assertSame(200, $r->status);
+        $this->assertTrue($r->isSuccessful());
+        $this->assertIsArray($r->data());
     }
 
-    protected function tearDown(): void
+    public function testIndexReturnsAllCreatedAlerts(): void
     {
-        Database::reset();
+        $this->seedAlert(['email' => 'a@test.com']);
+        $this->seedAlert(['email' => 'b@test.com']);
+
+        $r = $this->get('/api/alerts');
+
+        $this->assertCount(2, $r->data());
     }
 
-    private function migrate(\PDO $pdo): void
-    {
-        $pdo->exec('
-            CREATE TABLE IF NOT EXISTS alert_filters (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                email          TEXT    NOT NULL,
-                keywords       TEXT    NOT NULL DEFAULT \'[]\',
-                locations      TEXT,
-                contract_types TEXT,
-                is_active      INTEGER NOT NULL DEFAULT 1,
-                created_at     TEXT    NOT NULL DEFAULT (datetime(\'now\'))
-            )
-        ');
-    }
+    // ── POST /api/alerts ─────────────────────────────────────────────────────
 
-    public function testCreateAndRetrieveAlert(): void
+    public function testStoreReturns201WithLocationHeader(): void
     {
-        $filter = $this->repo->create([
-            'email'          => 'user@test.com',
-            'keywords'       => ['PHP', 'Laravel'],
-            'locations'      => ['São Paulo'],
-            'contract_types' => ['PJ'],
+        $r = $this->post('/api/alerts', [
+            'email'    => 'dev@example.com',
+            'keywords' => ['PHP', 'Laravel'],
         ]);
 
-        $this->assertSame('user@test.com', $filter->email);
-        $this->assertSame(['PHP', 'Laravel'], $filter->keywords);
-        $this->assertTrue($filter->isActive);
+        $this->assertSame(201, $r->status);
+        $this->assertTrue($r->isSuccessful());
+        $this->assertNotNull($r->header('Location'));
+        $this->assertStringStartsWith('/api/alerts/', $r->header('Location'));
     }
 
-    public function testListAllAlerts(): void
+    public function testStoreLocationHeaderContainsNewId(): void
     {
-        $this->repo->create(['email' => 'a@test.com', 'keywords' => ['PHP']]);
-        $this->repo->create(['email' => 'b@test.com', 'keywords' => ['Go']]);
+        $r  = $this->post('/api/alerts', [
+            'email'    => 'dev@example.com',
+            'keywords' => ['PHP'],
+        ]);
+        $id = $r->data()['id'] ?? null;
 
-        $all = $this->repo->findAll();
-
-        $this->assertCount(2, $all);
+        $this->assertSame("/api/alerts/{$id}", $r->header('Location'));
     }
 
-    public function testDeleteAlert(): void
+    public function testStorePersistsKeywordsCorrectly(): void
     {
-        $filter  = $this->repo->create(['email' => 'x@test.com', 'keywords' => ['Rust']]);
-        $deleted = $this->repo->delete($filter->id);
+        $this->post('/api/alerts', [
+            'email'    => 'kw@test.com',
+            'keywords' => ['PHP', 'Laravel', 'Docker'],
+        ]);
 
-        $this->assertTrue($deleted);
-        $this->assertCount(0, $this->repo->findAll());
+        $r = $this->get('/api/alerts');
+
+        $this->assertSame(['PHP', 'Laravel', 'Docker'], $r->data()[0]['keywords']);
     }
 
-    public function testDeleteReturnsFalseForNonExistentAlert(): void
+    // ── POST validation ──────────────────────────────────────────────────────
+
+    public function testStoreReturns422ForInvalidEmail(): void
     {
-        $this->assertFalse($this->repo->delete(9999));
+        $r = $this->post('/api/alerts', [
+            'email'    => 'not-an-email',
+            'keywords' => ['PHP'],
+        ]);
+
+        $this->assertSame(422, $r->status);
+        $this->assertFalse($r->isSuccessful());
     }
 
-    public function testFindActiveFiltersOutInactive(): void
+    public function testStoreReturns422ForMissingKeywords(): void
     {
-        $active   = $this->repo->create(['email' => 'active@test.com', 'keywords' => ['PHP']]);
-        $inactive = $this->repo->create(['email' => 'inactive@test.com', 'keywords' => ['Java']]);
+        $r = $this->post('/api/alerts', ['email' => 'dev@test.com']);
 
-        Database::connection()->exec(
-            "UPDATE alert_filters SET is_active = 0 WHERE id = {$inactive->id}"
-        );
+        $this->assertSame(422, $r->status);
+    }
 
-        $results = $this->repo->findActive();
+    public function testStoreReturns422ForEmptyKeywordsArray(): void
+    {
+        $r = $this->post('/api/alerts', [
+            'email'    => 'dev@test.com',
+            'keywords' => [],
+        ]);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('active@test.com', $results[0]->email);
+        $this->assertSame(422, $r->status);
+    }
+
+    // ── DELETE /api/alerts/{id} ──────────────────────────────────────────────
+
+    public function testDestroyReturns200WithDeletedTrue(): void
+    {
+        $filter = $this->seedAlert();
+
+        $r = $this->delete("/api/alerts/{$filter->id}");
+
+        $this->assertSame(200, $r->status);
+        $this->assertTrue($r->isSuccessful());
+        $this->assertTrue($r->data()['deleted']);
+    }
+
+    public function testDestroyReturns404ForUnknownId(): void
+    {
+        $r = $this->delete('/api/alerts/99999');
+
+        $this->assertSame(404, $r->status);
+        $this->assertFalse($r->isSuccessful());
+    }
+
+    public function testDestroyActuallyRemovesTheFilter(): void
+    {
+        $filter = $this->seedAlert();
+        $this->delete("/api/alerts/{$filter->id}");
+
+        $r = $this->get('/api/alerts');
+
+        $this->assertCount(0, $r->data());
     }
 }
