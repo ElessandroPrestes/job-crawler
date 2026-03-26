@@ -1,0 +1,759 @@
+openapi: "3.1.0"
+
+info:
+  title: Job Crawler API
+  version: "1.0.0"
+  description: |
+    API REST para coleta, consulta e exportação de vagas de emprego.
+
+    ## Autenticação
+    Esta versão é pública (sem autenticação obrigatória). Endpoints de mutação
+    exigem o header `X-CSRF-Token` para proteção contra CSRF.
+
+    ## Rate Limiting
+    - **Padrão:** 60 requisições / 60 segundos por IP
+    - **Endpoint `/api/crawl`:** 5 requisições / 60 segundos por IP
+    - Respostas com `429 Too Many Requests` incluem o header `Retry-After`
+
+    ## Convenções
+    - Todas as respostas usam o envelope `{ success, data, meta }`
+    - Datas no formato ISO 8601: `2024-03-15T10:30:00-03:00`
+    - Paginação via query params `page` e `per_page` (máx. 100)
+  contact:
+    name: Equipe Amura
+    email: dev@amura.com.br
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Desenvolvimento local
+  - url: https://staging.jobcrawler.example.com
+    description: Staging
+  - url: https://jobcrawler.example.com
+    description: Produção
+
+tags:
+  - name: Health
+    description: Verificação de saúde da aplicação
+  - name: Jobs
+    description: Consulta e filtragem de vagas de emprego
+  - name: Crawler
+    description: Disparo e monitoramento do crawler
+  - name: Alerts
+    description: Gerenciamento de filtros de alerta por e-mail
+  - name: Export
+    description: Exportação de vagas em diferentes formatos
+
+# ─────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────
+paths:
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Verifica se a aplicação e suas dependências estão operacionais.
+      operationId: health.check
+      responses:
+        "200":
+          description: Aplicação saudável
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                success: true
+                data:
+                  status: healthy
+                  version: "1.0.0"
+                  checks:
+                    database: ok
+                    storage: ok
+        "503":
+          description: Serviço indisponível
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Jobs ──────────────────────────────────────────────────
+  /api/jobs:
+    get:
+      tags: [Jobs]
+      summary: Listar vagas
+      description: |
+        Retorna lista paginada de vagas de emprego com suporte a múltiplos filtros.
+        Todos os filtros são opcionais e combinados com `AND`.
+      operationId: jobs.index
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - name: keyword
+          in: query
+          description: Busca em título, empresa e requisitos (case-insensitive)
+          schema:
+            type: string
+            maxLength: 200
+          example: "PHP Developer"
+        - name: location
+          in: query
+          description: Filtro por localização (busca parcial)
+          schema:
+            type: string
+            maxLength: 100
+          example: "São Paulo"
+        - name: source
+          in: query
+          description: Plataforma de origem
+          schema:
+            type: string
+            enum: [linkedin, indeed, custom, demo]
+          example: linkedin
+        - name: contract_type
+          in: query
+          description: Tipo de contrato
+          schema:
+            type: string
+            enum: [CLT, PJ, Remote, Hybrid]
+          example: PJ
+        - name: since
+          in: query
+          description: Vagas coletadas a partir desta data (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-01T00:00:00-03:00"
+      responses:
+        "200":
+          description: Lista de vagas
+          headers:
+            X-Total-Count:
+              description: Total de registros sem paginação
+              schema:
+                type: integer
+            X-Page:
+              description: Página atual
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Job"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Detalhe de uma vaga
+      operationId: jobs.show
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Vaga encontrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Job"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  # ── Crawler ───────────────────────────────────────────────
+  /api/crawl:
+    post:
+      tags: [Crawler]
+      summary: Disparar crawl
+      description: |
+        Inicia uma execução do crawler de forma síncrona.
+        Ao final, dispara notificações por e-mail para alertas correspondentes.
+        **Rate limit reforçado:** 5 requisições / 60s por IP.
+      operationId: crawler.run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrawlRequest"
+            examples:
+              linkedin_php:
+                summary: Vagas de PHP no LinkedIn
+                value:
+                  source: linkedin
+                  keyword: "PHP Developer"
+                  location: "São Paulo"
+                  max_pages: 3
+              custom_remote:
+                summary: Vagas remotas via driver customizado
+                value:
+                  source: custom
+                  keyword: "Backend"
+                  location: "Remote"
+      responses:
+        "200":
+          description: Crawl executado com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CrawlResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/crawl/logs:
+    get:
+      tags: [Crawler]
+      summary: Histórico de execuções
+      operationId: crawler.logs
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [running, success, failed]
+        - name: source
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Histórico de crawls
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CrawlLog"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  # ── Alerts ────────────────────────────────────────────────
+  /api/alerts:
+    get:
+      tags: [Alerts]
+      summary: Listar filtros de alerta
+      operationId: alerts.index
+      responses:
+        "200":
+          description: Filtros ativos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AlertFilter"
+
+    post:
+      tags: [Alerts]
+      summary: Criar filtro de alerta
+      description: |
+        Cadastra um novo filtro. O e-mail receberá notificações quando vagas
+        novas corresponderem aos critérios definidos.
+      operationId: alerts.store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertFilterRequest"
+            example:
+              email: "dev@exemplo.com.br"
+              keywords: ["PHP", "Laravel", "Backend"]
+              locations: ["São Paulo", "Remote"]
+              contract_types: ["PJ", "CLT"]
+      responses:
+        "201":
+          description: Filtro criado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AlertFilter"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/alerts/{id}:
+    delete:
+      tags: [Alerts]
+      summary: Remover filtro de alerta
+      operationId: alerts.destroy
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Filtro removido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Export ────────────────────────────────────────────────
+  /api/export:
+    get:
+      tags: [Export]
+      summary: Exportar vagas
+      description: |
+        Exporta vagas aplicando os mesmos filtros do endpoint `/api/jobs`.
+        Para CSV, o `Content-Type` será `text/csv`.
+        Para JSON, o `Content-Type` será `application/json`.
+      operationId: export.download
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [csv, json]
+          example: csv
+        - name: keyword
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: source
+          in: query
+          schema:
+            type: string
+        - name: contract_type
+          in: query
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Arquivo exportado
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: 'attachment; filename="jobs-2024-03-15.csv"'
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+# ─────────────────────────────────────────────────────────────
+# Components
+# ─────────────────────────────────────────────────────────────
+components:
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 42
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+
+  schemas:
+
+    # ── Envelope ────────────────────────────────────────────
+    SuccessEnvelope:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          oneOf:
+            - type: object
+            - type: array
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    ErrorResponse:
+      type: object
+      required: [success, error, code]
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Recurso não encontrado."
+        code:
+          type: integer
+          example: 404
+
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 248
+        page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        last_page:
+          type: integer
+          example: 13
+
+    # ── Job ─────────────────────────────────────────────────
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        external_id:
+          type: string
+          example: "urn:li:fsd_jobPosting:3890123456"
+        source:
+          type: string
+          enum: [linkedin, indeed, custom, demo]
+          example: linkedin
+        title:
+          type: string
+          example: "Desenvolvedor PHP Sênior"
+        company:
+          type: string
+          example: "Tech Corp Brasil"
+        location:
+          type: string
+          nullable: true
+          example: "São Paulo, SP (Remoto)"
+        contract_type:
+          type: string
+          nullable: true
+          enum: [CLT, PJ, Remote, Hybrid]
+          example: PJ
+        description:
+          type: string
+          nullable: true
+        requirements:
+          type: string
+          nullable: true
+          example: "PHP 8+, Laravel, MySQL, Docker"
+        salary_range:
+          type: string
+          nullable: true
+          example: "R$ 10.000 - R$ 15.000"
+        url:
+          type: string
+          format: uri
+          example: "https://www.linkedin.com/jobs/view/3890123456"
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        scraped_at:
+          type: string
+          format: date-time
+        is_notified:
+          type: boolean
+          example: false
+
+    # ── Crawl ───────────────────────────────────────────────
+    CrawlRequest:
+      type: object
+      required: [source, keyword]
+      properties:
+        source:
+          type: string
+          enum: [linkedin, indeed, custom]
+          example: linkedin
+        keyword:
+          type: string
+          minLength: 2
+          maxLength: 200
+          example: "PHP Developer"
+        location:
+          type: string
+          maxLength: 100
+          example: "São Paulo"
+        max_pages:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          example: 3
+
+    CrawlResult:
+      type: object
+      properties:
+        log_id:
+          type: integer
+          example: 17
+        source:
+          type: string
+          example: linkedin
+        keyword:
+          type: string
+          example: "PHP Developer"
+        location:
+          type: string
+          example: "São Paulo"
+        status:
+          type: string
+          enum: [success, failed]
+          example: success
+        jobs_found:
+          type: integer
+          example: 42
+        jobs_new:
+          type: integer
+          example: 8
+        notifications_sent:
+          type: integer
+          example: 2
+        duration_ms:
+          type: integer
+          example: 4320
+
+    CrawlLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        source:
+          type: string
+        keyword:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [running, success, failed]
+        jobs_found:
+          type: integer
+        jobs_new:
+          type: integer
+        error_msg:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ── Alert ───────────────────────────────────────────────
+    AlertFilterRequest:
+      type: object
+      required: [email, keywords]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "dev@exemplo.com.br"
+        keywords:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: string
+            minLength: 2
+            maxLength: 100
+          example: ["PHP", "Laravel"]
+        locations:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: ["São Paulo", "Remote"]
+        contract_types:
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum: [CLT, PJ, Remote, Hybrid]
+          example: ["PJ", "CLT"]
+
+    AlertFilter:
+      allOf:
+        - $ref: "#/components/schemas/AlertFilterRequest"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 3
+            is_active:
+              type: boolean
+              example: true
+            created_at:
+              type: string
+              format: date-time
+
+    # ── Health ──────────────────────────────────────────────
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [healthy, degraded, unhealthy]
+            version:
+              type: string
+            checks:
+              type: object
+              properties:
+                database:
+                  type: string
+                  enum: [ok, fail]
+                storage:
+                  type: string
+                  enum: [ok, fail]
+
+  responses:
+    BadRequest:
+      description: Requisição malformada
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error: "Parâmetro 'source' inválido."
+            code: 400
+
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error: "Vaga não encontrada."
+            code: 404
+
+    UnprocessableEntity:
+      description: Dados válidos porém não processáveis
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error: "O campo 'email' deve ser um endereço válido."
+            code: 422
+
+    RateLimited:
+      description: Limite de requisições excedido
+      headers:
+        Retry-After:
+          description: Segundos até o próximo request ser permitido
+          schema:
+            type: integer
+            example: 30
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error: "Limite de requisições excedido. Tente novamente em 30 segundos."
+            code: 429
+
+    InternalError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            success: false
+            error: "Erro interno do servidor."
+            code: 500
