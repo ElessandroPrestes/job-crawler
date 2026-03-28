@@ -87,6 +87,7 @@ abstract class ApplicationTestCase extends TestCase
         $router->get('/api/alerts',               [new AlertController(), 'index']);
         $router->post('/api/alerts',              [new AlertController(), 'store']);
         $router->delete('/api/alerts/{id:\d+}',   [new AlertController(), 'destroy']);
+        $router->get('/api/export',               [new ExportController(), 'download']);
         return $router;
     }
 

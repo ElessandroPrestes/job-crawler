@@ -13,8 +13,8 @@ RUN apk add --no-cache \
         mbstring \
         xml \
         opcache \
-    && pecl install apcu \
-    && docker-php-ext-enable apcu \
+    && pecl install apcu pcov \
+    && docker-php-ext-enable apcu pcov \
     && apk del ${PHPIZE_DEPS}
 
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer

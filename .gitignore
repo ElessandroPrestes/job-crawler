@@ -5,5 +5,4 @@ storage/logs/*.log
 storage/exports/
 .phpunit.cache/
 .phpunit.result.cache
-composer.lock
 *.DS_Store
