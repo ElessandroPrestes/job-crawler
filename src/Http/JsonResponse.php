@@ -65,7 +65,7 @@ final class JsonResponse
         header('Content-Type: application/json; charset=utf-8');
 
         foreach ($extraHeaders as $name => $value) {
-            header("{$name}: {$value}");
+            header("{\}: {$value}");
         }
 
         $payload = array_filter($body, static fn ($v) => $v !== null);
@@ -74,7 +74,7 @@ final class JsonResponse
             (self::$onSend)($status, $payload, $extraHeaders);
         }
 
-        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
         exit;
     }
 }

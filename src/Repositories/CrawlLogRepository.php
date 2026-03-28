@@ -21,9 +21,9 @@ final class CrawlLogRepository
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO crawl_logs (source, keyword, location, status, started_at)
-             VALUES (?, ?, ?, \'running\', NOW())'
+             VALUES (?, ?, ?, \'running\', ?)'
         );
-        $stmt->execute([$source, $keyword, $location]);
+        $stmt->execute([$source, $keyword, $location, date('Y-m-d H:i:s')]);
 
         return (int) $this->pdo->lastInsertId();
     }
@@ -32,10 +32,10 @@ final class CrawlLogRepository
     {
         $stmt = $this->pdo->prepare(
             'UPDATE crawl_logs
-             SET status = ?, jobs_found = ?, jobs_new = ?, error_msg = ?, finished_at = NOW()
+             SET status = ?, jobs_found = ?, jobs_new = ?, error_msg = ?, finished_at = ?
              WHERE id = ?'
         );
-        $stmt->execute([$status, $jobsFound, $jobsNew, $errorMsg, $id]);
+        $stmt->execute([$status, $jobsFound, $jobsNew, $errorMsg, date('Y-m-d H:i:s'), $id]);
     }
 
     public function findAll(array $filters = [], int $page = 1, int $perPage = 20): array

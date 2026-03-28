@@ -9,7 +9,6 @@ use App\Http\JsonResponse;
 final class CsrfGuard
 {
     private const SESSION_KEY = '_csrf_token';
-    private const HEADER_KEY  = 'X-CSRF-Token';
 
     public function token(): string
     {

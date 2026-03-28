@@ -12,9 +12,9 @@ final class Request
 
     public function __construct()
     {
-        $this->query  = $_GET ?? [];
+        $this->server = $_SERVER;
+        $this->query  = $_GET;
         $this->body   = $this->parseBody();
-        $this->server = $_SERVER ?? [];
     }
 
     public function method(): string
@@ -82,7 +82,7 @@ final class Request
             return is_array($data) ? $data : [];
         }
 
-        return $_POST ?? [];
+        return $_POST;
     }
 
     private function sanitize(string $value): string

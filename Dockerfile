@@ -1,12 +1,12 @@
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \
-    curl \
-    libpng-dev \
-    libxml2-dev \
-    oniguruma-dev \
-    zip \
-    unzip \
+        curl \
+        libxml2-dev \
+        oniguruma-dev \
+        zip \
+        unzip \
+        ${PHPIZE_DEPS} \
     && docker-php-ext-install \
         pdo \
         pdo_mysql \
@@ -14,7 +14,8 @@ RUN apk add --no-cache \
         xml \
         opcache \
     && pecl install apcu \
-    && docker-php-ext-enable apcu
+    && docker-php-ext-enable apcu \
+    && apk del ${PHPIZE_DEPS}
 
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 

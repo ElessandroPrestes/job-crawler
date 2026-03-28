@@ -88,13 +88,28 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Aguarde todos os healthchecks ficarem `healthy` (~30 segundos):
+Aguarde todos os healthchecks ficarem `healthy` (~2-3 minutos — MySQL inicializa o banco na primeira execução):
 
 ```bash
 docker compose ps
 ```
 
-### 4. Acesse os serviços
+### 4. Instale as dependências PHP
+
+```bash
+docker compose exec app composer install
+```
+
+### 5. Crie os diretórios de storage
+
+```bash
+docker compose exec -u root app mkdir -p /var/www/html/storage/logs /var/www/html/storage/exports
+docker compose exec -u root app chown -R www-data:www-data /var/www/html/storage
+```
+
+> Necessário porque o volume mount `.:/var/www/html` sobrescreve os diretórios criados pelo Dockerfile.
+
+### 6. Acesse os serviços
 
 | Serviço      | URL                          |
 |--------------|------------------------------|
@@ -102,7 +117,7 @@ docker compose ps
 | Swagger UI   | http://localhost:8080/docs   |
 | MailHog (UI) | http://localhost:8025        |
 
-### 5. Verifique a instalação
+### 7. Verifique a instalação
 
 ```bash
 curl http://localhost:8080/health
@@ -202,48 +217,85 @@ Copie `.env.example` para `.env` e ajuste conforme necessário:
 
 ## Exemplos de uso
 
-### Listar vagas de PHP em São Paulo
+### Listar vagas de PHP e Node.js no Brasil
 
 ```bash
-curl "http://localhost:8080/api/jobs?keyword=PHP&location=São+Paulo&per_page=10"
+# Desenvolvedor PHP no Brasil
+curl "http://localhost:8080/api/jobs?keyword=desenvolvedor+php&location=brazil&per_page=10"
+
+# Desenvolvedor Node no Brasil
+curl "http://localhost:8080/api/jobs?keyword=desenvolvedor+node&location=brazil&per_page=10"
+
+# Laravel — remoto, ordenado por mais recentes
+curl "http://localhost:8080/api/jobs?keyword=laravel&location=remote&per_page=10"
 ```
 
-### Disparar crawl
+### Disparar crawl no LinkedIn (Brasil · remoto · últimos 3 dias)
 
 ```bash
+# Vagas de Desenvolvedor PHP
 curl -X POST http://localhost:8080/api/crawl \
   -H "Content-Type: application/json" \
   -d '{
     "source": "linkedin",
-    "keyword": "PHP Developer",
-    "location": "São Paulo",
+    "keyword": "desenvolvedor php",
+    "location": "brasil",
+    "max_pages": 3
+  }'
+
+# Vagas de Desenvolvedor Node
+curl -X POST http://localhost:8080/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "linkedin",
+    "keyword": "desenvolvedor node",
+    "location": "brasil",
     "max_pages": 3
   }'
 ```
 
+> O crawler filtra automaticamente títulos que contenham **php** ou **node** e localizações
+> restritas a **Brasil**, **remoto** ou **home office** — publicações dos últimos 3 dias.
+
 ### Criar alerta de e-mail
+
+Receba notificações automáticas quando novas vagas forem encontradas:
 
 ```bash
 curl -X POST http://localhost:8080/api/alerts \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev@exemplo.com.br",
-    "keywords": ["PHP", "Laravel", "Backend"],
-    "locations": ["São Paulo", "Remote"],
+    "keywords": ["desenvolvedor php", "desenvolvedor node", "php", "laravel", "node"],
+    "locations": ["brasil", "brazil", "remoto", "remote", "home office"],
     "contract_types": ["PJ", "CLT"]
   }'
 ```
 
+Os e-mails são capturados localmente pelo **MailHog** disponível em:
+
+> **http://localhost:8025**
+
+Nenhuma mensagem sai para a internet em ambiente de desenvolvimento.
+
 ### Exportar vagas em CSV
 
 ```bash
-curl "http://localhost:8080/api/export?format=csv&keyword=PHP" -o vagas.csv
+# Todas as vagas de PHP via API
+curl "http://localhost:8080/api/export?format=csv&keyword=php" -o vagas-php.csv
+
+# Todas as vagas via script (salva em storage/exports/)
+docker compose exec app php scripts/export.php --format=csv --output=storage/exports/vagas.csv
 ```
 
 ### Exportar vagas em JSON
 
 ```bash
+# Somente vagas do LinkedIn via API
 curl "http://localhost:8080/api/export?format=json&source=linkedin" -o vagas.json
+
+# Com filtro por keyword
+curl "http://localhost:8080/api/export?format=json&keyword=node" -o vagas-node.json
 ```
 
 ---
@@ -259,6 +311,9 @@ docker compose exec app composer test:unit
 
 # Apenas integração
 docker compose exec app composer test:integration
+
+# Apenas feature
+docker compose exec app composer test:feature
 
 # Com relatório de cobertura (HTML em /coverage)
 docker compose exec app composer test:coverage

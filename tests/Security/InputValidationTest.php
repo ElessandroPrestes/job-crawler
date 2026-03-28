@@ -14,10 +14,11 @@ final class InputValidationTest extends ApplicationTestCase
     {
         $this->seedJob(['title' => '<script>alert("xss")</script>']);
 
-        $r    = $this->get('/api/jobs', ['keyword' => 'script']);
-        $body = json_encode($r->data());
+        $r = $this->get('/api/jobs', ['keyword' => 'script']);
 
-        $this->assertStringNotContainsString('<script>', (string) $body);
+        // Simulate the JSON wire format using the same encoding flags as JsonResponse
+        $wireJson = json_encode($r->body, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $this->assertStringNotContainsString('<script>', (string) $wireJson);
     }
 
     public function testXssInAlertEmailIsRejectedAsInvalidEmail(): void

@@ -40,7 +40,11 @@ final class Router
             $params = $this->match($route['pattern'], $uri);
 
             if ($params !== null) {
-                ($route['handler'])($request, $params);
+                try {
+                    ($route['handler'])($request, $params);
+                } catch (HttpException $e) {
+                    JsonResponse::error($e->getStatusCode(), $e->getMessage());
+                }
                 return;
             }
         }
@@ -55,7 +59,11 @@ final class Router
 
     private function match(string $pattern, string $uri): ?array
     {
-        $regex = preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/', '(?P<$1>[^/]+)', $pattern);
+        $regex = preg_replace_callback(
+            '/\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^}]+))?\}/',
+            static fn ($m) => '(?P<' . $m[1] . '>' . ($m[2] ?? '[^/]+') . ')',
+            $pattern
+        );
         $regex = '#^' . $regex . '$#';
 
         if (preg_match($regex, $uri, $matches) !== 1) {

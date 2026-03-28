@@ -58,15 +58,27 @@ final class LinkedInDriver
         return $jobs;
     }
 
+    private const GEO_IDS = [
+        'brasil' => '106057199',
+        'brazil' => '106057199',
+    ];
+
     private function buildUrl(string $keyword, ?string $location, int $start): string
     {
         $params = [
             'keywords' => $keyword,
             'start'    => $start,
+            'f_WT'     => '2',
+            'f_TPR'    => 'r259200',
         ];
 
         if ($location) {
-            $params['location'] = $location;
+            $key = strtolower($location);
+            if (isset(self::GEO_IDS[$key])) {
+                $params['geoId'] = self::GEO_IDS[$key];
+            } else {
+                $params['location'] = $location;
+            }
         }
 
         return 'https://www.linkedin.com/jobs/search?' . http_build_query($params);
@@ -88,13 +100,28 @@ final class LinkedInDriver
                 return;
             }
 
+            $publishedAt = null;
+            try {
+                $timeNode = $node->filter('time');
+                if ($timeNode->count() > 0) {
+                    $dt = $timeNode->attr('datetime');
+                    if ($dt) {
+                        $ts = strtotime($dt);
+                        if ($ts !== false) {
+                            $publishedAt = date('Y-m-d H:i:s', $ts);
+                        }
+                    }
+                }
+            } catch (\Throwable) {}
+
             $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => 'linkedin',
-                'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => $url,
+                'external_id'  => $externalId,
+                'source'       => 'linkedin',
+                'title'        => $title,
+                'company'      => $company,
+                'location'     => $location ?: null,
+                'url'          => $url,
+                'published_at' => $publishedAt,
             ];
         });
 

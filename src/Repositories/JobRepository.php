@@ -46,7 +46,7 @@ final class JobRepository
         }
 
         if (!empty($filters['since'])) {
-            $where[]  = 'scraped_at >= ?';
+            $where[]  = 'COALESCE(published_at, scraped_at) >= ?';
             $params[] = $filters['since'];
         }
 
@@ -54,7 +54,7 @@ final class JobRepository
         if ($where) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
-        $sql .= ' ORDER BY scraped_at DESC LIMIT ? OFFSET ?';
+        $sql .= ' ORDER BY COALESCE(published_at, scraped_at) DESC LIMIT ? OFFSET ?';
 
         $params[] = $perPage;
         $params[] = ($page - 1) * $perPage;
@@ -94,7 +94,7 @@ final class JobRepository
         }
 
         if (!empty($filters['since'])) {
-            $where[]  = 'scraped_at >= ?';
+            $where[]  = 'COALESCE(published_at, scraped_at) >= ?';
             $params[] = $filters['since'];
         }
 
@@ -179,13 +179,14 @@ final class JobRepository
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
-        return (int) $this->pdo->lastInsertId();
+        // rowCount() == 1: nova inserção; == 2: duplicate key update; == 0: sem mudança
+        return $stmt->rowCount() === 1 ? 1 : 0;
     }
 
     public function findUnnotified(): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT * FROM jobs WHERE is_notified = 0 ORDER BY scraped_at DESC'
+            'SELECT * FROM jobs WHERE is_notified = 0 ORDER BY COALESCE(published_at, scraped_at) DESC'
         );
         $stmt->execute();
 

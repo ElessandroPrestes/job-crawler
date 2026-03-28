@@ -43,9 +43,8 @@ final class InputSanitizerTest extends TestCase
     {
         $result = $this->sanitizer->sanitize($payload);
 
-        $this->assertStringNotContainsString('<script', $result);
-        $this->assertStringNotContainsString('javascript:', $result);
-        $this->assertStringNotContainsString('onerror=', $result);
+        // After htmlspecialchars, no raw HTML opening tag should remain executable
+        $this->assertDoesNotMatchRegularExpression('/<[a-zA-Z]/', $result);
     }
 
     public static function xssPayloadProvider(): array

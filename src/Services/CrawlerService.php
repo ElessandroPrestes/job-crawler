@@ -50,6 +50,7 @@ final class CrawlerService
 
         try {
             $rawJobs = $this->fetchJobs($source, $keyword, $location, $maxPages, $params['url'] ?? null);
+            $rawJobs = $this->filterRelevant($rawJobs);
         } catch (CrawlerException $e) {
             $this->logs->finish($logId, 'failed', 0, 0, $e->getMessage());
             throw $e;
@@ -82,12 +83,47 @@ final class CrawlerService
         ];
     }
 
+    private function filterRelevant(array $jobs): array
+    {
+        return array_values(array_filter($jobs, static function (array $job): bool {
+            $title = strtolower($job['title'] ?? '');
+
+            $titleMatch = str_contains($title, 'php') || str_contains($title, 'node');
+
+            if (!$titleMatch) {
+                return false;
+            }
+
+            if (!empty($job['published_at'])) {
+                $ts = strtotime($job['published_at']);
+                if ($ts !== false && $ts < strtotime('-3 days')) {
+                    return false;
+                }
+            }
+
+            $loc = strtolower($job['location'] ?? '');
+
+            if ($loc === '') {
+                return true;
+            }
+
+            foreach (['brasil', 'brazil', 'remoto', 'remote', 'home office'] as $term) {
+                if (str_contains($loc, $term)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+    }
+
     private function fetchJobs(string $source, string $keyword, ?string $location, int $maxPages, ?string $url): array
     {
         return match ($source) {
             'linkedin' => (new LinkedInDriver())->fetch($keyword, $location, $maxPages),
             'indeed'   => (new IndeedDriver())->fetch($keyword, $location, $maxPages),
             'custom'   => (new CustomDriver())->fetch($url ?? '', $keyword, $location, $maxPages),
+            default    => throw new CrawlerException("Driver não encontrado: {$source}"),
         };
     }
 

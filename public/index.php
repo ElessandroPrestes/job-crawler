@@ -36,15 +36,15 @@ $router  = new Router();
 
 $router->get('/health', [new HealthController(), 'index']);
 
-$router->get('/api/jobs',       [new JobController(), 'index']);
-$router->get('/api/jobs/{id}',  [new JobController(), 'show']);
+$router->get('/api/jobs',          [new JobController(), 'index']);
+$router->get('/api/jobs/{id:\d+}', [new JobController(), 'show']);
 
 $router->post('/api/crawl',      [new CrawlerController(), 'run']);
 $router->get('/api/crawl/logs',  [new CrawlerController(), 'logs']);
 
-$router->get('/api/alerts',         [new AlertController(), 'index']);
-$router->post('/api/alerts',        [new AlertController(), 'store']);
-$router->delete('/api/alerts/{id}', [new AlertController(), 'destroy']);
+$router->get('/api/alerts',              [new AlertController(), 'index']);
+$router->post('/api/alerts',             [new AlertController(), 'store']);
+$router->delete('/api/alerts/{id:\d+}',  [new AlertController(), 'destroy']);
 
 $router->get('/api/export', [new ExportController(), 'download']);
 

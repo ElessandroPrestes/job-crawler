@@ -79,14 +79,14 @@ abstract class ApplicationTestCase extends TestCase
     private function buildRouter(): Router
     {
         $router = new Router();
-        $router->get('/health',             [new HealthController(), 'index']);
-        $router->get('/api/jobs',           [new JobController(), 'index']);
-        $router->get('/api/jobs/{id}',      [new JobController(), 'show']);
-        $router->post('/api/crawl',         [new CrawlerController(), 'run']);
-        $router->get('/api/crawl/logs',     [new CrawlerController(), 'logs']);
-        $router->get('/api/alerts',         [new AlertController(), 'index']);
-        $router->post('/api/alerts',        [new AlertController(), 'store']);
-        $router->delete('/api/alerts/{id}', [new AlertController(), 'destroy']);
+        $router->get('/health',                   [new HealthController(), 'index']);
+        $router->get('/api/jobs',                 [new JobController(), 'index']);
+        $router->get('/api/jobs/{id:\d+}',        [new JobController(), 'show']);
+        $router->post('/api/crawl',               [new CrawlerController(), 'run']);
+        $router->get('/api/crawl/logs',           [new CrawlerController(), 'logs']);
+        $router->get('/api/alerts',               [new AlertController(), 'index']);
+        $router->post('/api/alerts',              [new AlertController(), 'store']);
+        $router->delete('/api/alerts/{id:\d+}',   [new AlertController(), 'destroy']);
         return $router;
     }
 
@@ -143,7 +143,7 @@ abstract class ApplicationTestCase extends TestCase
     protected function seedJob(array $overrides = []): int
     {
         $repo = new \App\Repositories\JobRepository();
-        return $repo->upsert(array_merge([
+        $data = array_merge([
             'external_id'   => 'ext-' . uniqid(),
             'source'        => 'linkedin',
             'title'         => 'PHP Developer',
@@ -151,7 +151,9 @@ abstract class ApplicationTestCase extends TestCase
             'location'      => 'São Paulo',
             'contract_type' => 'PJ',
             'url'           => 'https://linkedin.com/jobs/1',
-        ], $overrides));
+        ], $overrides);
+        $repo->upsert($data);
+        return (int) \App\Config\Database::connection()->lastInsertId();
     }
 
     protected function seedAlert(array $overrides = []): \App\Models\AlertFilter

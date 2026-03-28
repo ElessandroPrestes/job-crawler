@@ -40,6 +40,7 @@ final class ExportService
     private function toCsv(array $jobs): string
     {
         $handle = fopen('php://temp', 'r+');
+        assert($handle !== false);
 
         fputcsv($handle, ['id', 'title', 'company', 'location', 'contract_type', 'source', 'url', 'scraped_at']);
 

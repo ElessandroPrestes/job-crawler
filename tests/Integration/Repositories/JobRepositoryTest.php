@@ -201,7 +201,7 @@ final class JobRepositoryTest extends DatabaseTestCase
 
     private function insert(array $overrides = []): int
     {
-        return $this->repo->upsert(array_merge([
+        $data = array_merge([
             'external_id'   => 'ext-' . uniqid(),
             'source'        => 'linkedin',
             'title'         => 'PHP Developer',
@@ -209,6 +209,8 @@ final class JobRepositoryTest extends DatabaseTestCase
             'location'      => 'São Paulo',
             'contract_type' => 'PJ',
             'url'           => 'https://linkedin.com/jobs/1',
-        ], $overrides));
+        ], $overrides);
+        $this->repo->upsert($data);
+        return (int) $this->pdo->lastInsertId();
     }
 }
