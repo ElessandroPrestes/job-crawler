@@ -23,6 +23,7 @@ info:
     name: Equipe Amura
     email: dev@amura.com.br
   license:
+    url: "https://opensource.org/licenses/MIT"
     name: MIT
 
 servers:
