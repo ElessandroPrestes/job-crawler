@@ -15,6 +15,7 @@
 O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listagem e filtros, alertas por email, e exportação (CSV/JSON). Segue princípios REST e segurança baseada na OWASP Top 10.
 
 ### Últimas Atualizações
+- Adoção do Makefile como task runner local (SPEC-001).
 - Setup inicial do framework Universal SDD.
 
 ### Decisões Arquiteturais Vigentes

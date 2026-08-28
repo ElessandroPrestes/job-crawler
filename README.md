@@ -324,33 +324,18 @@ docker compose exec app composer test:coverage
 
 ---
 
-## Scripts CLI
+## Scripts CLI (Makefile)
 
-Execute dentro do container:
+O projeto utiliza um `Makefile` para abstrair os comandos do Docker e do Composer. 
+Para ver todos os comandos disponíveis, rode apenas `make`.
 
-```bash
-# Disparar crawl manualmente
-docker compose exec app php scripts/crawl.php \
-  --source=linkedin \
-  --keyword="PHP Developer" \
-  --location="Remote" \
-  --max-pages=5
-
-# Exportar vagas para arquivo
-docker compose exec app php scripts/export.php \
-  --format=csv \
-  --output=/var/www/html/storage/exports/vagas.csv
-
-# Executar migrations pendentes
-docker compose exec app php scripts/migrate.php
-
-# Disparar notificações de e-mail manualmente
-docker compose exec app php scripts/notify.php
-```
-
-Todos os scripts aceitam `--help` para ver as opções disponíveis.
-
----
+Principais comandos:
+- `make up`: Inicia os containers.
+- `make down`: Para os containers.
+- `make bash`: Entra no container da aplicação.
+- `make test`: Roda a suíte de testes.
+- `make analyse`: Roda a análise estática com PHPStan.
+- `make swagger`: Gera o OpenAPI yaml.
 
 ## Estrutura do projeto
 
