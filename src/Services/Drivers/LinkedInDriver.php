@@ -13,10 +13,11 @@ use Symfony\Component\DomCrawler\Crawler;
 final class LinkedInDriver
 {
     private Client $http;
+    public static ?Client $mockClient = null;
 
-    public function __construct()
+    public function __construct(?Client $client = null)
     {
-        $this->http = new Client([
+        $this->http = self::$mockClient ?? $client ?? new Client([
             'timeout'         => 30,
             'connect_timeout' => 10,
             'headers'         => [

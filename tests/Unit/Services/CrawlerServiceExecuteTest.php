@@ -7,6 +7,11 @@ namespace Tests\Unit\Services;
 use App\Exceptions\CrawlerException;
 use App\Repositories\CrawlLogRepository;
 use App\Services\CrawlerService;
+use App\Services\Drivers\LinkedInDriver;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 use Tests\Support\DatabaseTestCase;
 
 /**
@@ -21,6 +26,20 @@ final class CrawlerServiceExecuteTest extends DatabaseTestCase
     {
         parent::setUp();
         $this->service = new CrawlerService();
+        
+        // Mock LinkedIn Driver to prevent 429 in CI
+        $mock = new MockHandler([
+            new Response(200, [], '<html><head><title>LinkedIn</title></head><body><ul class="jobs-search__results-list"><li><div class="base-search-card__info"><h3 class="base-search-card__title">PHP Developer</h3><h4 class="base-search-card__subtitle">Company</h4></div></li></ul></body></html>'),
+            new Response(200, [], '<html><body></body></html>') // empty response to break the loop
+        ]);
+        $handlerStack = HandlerStack::create($mock);
+        LinkedInDriver::$mockClient = new Client(['handler' => $handlerStack]);
+    }
+    
+    protected function tearDown(): void
+    {
+        LinkedInDriver::$mockClient = null;
+        parent::tearDown();
     }
 
     // ─── Indeed lança CrawlerException ────────────────────────────────────────
