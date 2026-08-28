@@ -39,6 +39,9 @@
         "swagger:validate": "npx --yes swagger-cli validate docs/swagger/openapi.yaml"
     },
     "config": {
+        "platform": {
+            "php": "8.2.0"
+        },
         "optimize-autoloader": true,
         "sort-packages": true,
         "allow-plugins": {}
