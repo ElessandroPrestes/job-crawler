@@ -85,7 +85,8 @@ cp .env.example .env
 ### 3. Suba os containers
 
 ```bash
-docker compose up -d --build
+make build
+make up
 ```
 
 Aguarde todos os healthchecks ficarem `healthy` (~2-3 minutos — MySQL inicializa o banco na primeira execução):
@@ -97,14 +98,13 @@ docker compose ps
 ### 4. Instale as dependências PHP
 
 ```bash
-docker compose exec app composer install
+make install
 ```
 
 ### 5. Crie os diretórios de storage
 
 ```bash
-docker compose exec -u root app mkdir -p /var/www/html/storage/logs /var/www/html/storage/exports
-docker compose exec -u root app chown -R www-data:www-data /var/www/html/storage
+make setup-storage
 ```
 
 > Necessário porque o volume mount `.:/var/www/html` sobrescreve os diretórios criados pelo Dockerfile.
@@ -285,7 +285,7 @@ Nenhuma mensagem sai para a internet em ambiente de desenvolvimento.
 curl "http://localhost:8080/api/export?format=csv&keyword=php" -o vagas-php.csv
 
 # Todas as vagas via script (salva em storage/exports/)
-docker compose exec app php scripts/export.php --format=csv --output=storage/exports/vagas.csv
+make export ARGS="--format=csv --output=storage/exports/vagas.csv"
 ```
 
 ### Exportar vagas em JSON
@@ -304,19 +304,19 @@ curl "http://localhost:8080/api/export?format=json&keyword=node" -o vagas-node.j
 
 ```bash
 # Todos os testes
-docker compose exec app composer test
+make test
 
 # Apenas unitários
-docker compose exec app composer test:unit
+make test-unit
 
 # Apenas integração
-docker compose exec app composer test:integration
+make test-integration
 
 # Apenas feature
-docker compose exec app composer test:feature
+make test-feature
 
 # Com relatório de cobertura (HTML em /coverage)
-docker compose exec app composer test:coverage
+make test-coverage
 ```
 
 > Os testes de integração e feature usam SQLite in-memory — sem dependência do MySQL.

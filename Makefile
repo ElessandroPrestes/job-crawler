@@ -31,3 +31,25 @@ audit: ## Verifica vulnerabilidades de dependências no container app
 
 swagger: ## Gera a documentação Swagger OpenAPI
 	docker-compose exec app composer swagger:generate
+
+install: ## Instala as dependências via Composer no container
+	docker-compose exec app composer install
+
+setup-storage: ## Cria e ajusta permissões dos diretórios de storage
+	docker-compose exec -u root app mkdir -p /var/www/html/storage/logs /var/www/html/storage/exports
+	docker-compose exec -u root app chown -R www-data:www-data /var/www/html/storage
+
+test-unit: ## Executa apenas testes unitários
+	docker-compose exec app composer test:unit
+
+test-integration: ## Executa apenas testes de integração
+	docker-compose exec app composer test:integration
+
+test-feature: ## Executa apenas testes de feature
+	docker-compose exec app composer test:feature
+
+test-coverage: ## Executa testes com relatório de cobertura HTML
+	docker-compose exec app composer test:coverage
+
+export: ## Executa o script de exportação (use ARGS="--format=csv")
+	docker-compose exec app php scripts/export.php $(ARGS)
