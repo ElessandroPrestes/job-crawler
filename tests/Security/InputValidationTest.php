@@ -106,7 +106,7 @@ final class InputValidationTest extends ApplicationTestCase
     {
         $this->seedJob(['source' => 'linkedin']);
 
-        $r = $this->get('/api/jobs', ['source' => 'glassdoor']);
+        $r = $this->get('/api/jobs', ['source' => 'invalid_source']);
 
         $this->assertSame(200, $r->status);
         $this->assertCount(0, $r->data());

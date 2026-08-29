@@ -1,17 +1,17 @@
 # TASK-012: Adicionar Novas Plataformas ao Crawler
 
 ## Passos (Agendados para 31/08)
-- [ ] Criar `specs/012-novas-fontes.md`. (✓)
-- [ ] Implementar driver `GupyDriver.php`.
-- [ ] Implementar driver `VagasDriver.php`.
-- [ ] Implementar driver `CathoDriver.php`.
-- [ ] Implementar driver `InfoJobsDriver.php`.
-- [ ] Implementar driver `GlassdoorDriver.php`.
-- [ ] Implementar driver `SolidesDriver.php`.
-- [ ] Implementar driver `ProgramathorDriver.php`.
-- [ ] Implementar driver `GeekHunterDriver.php`.
-- [ ] Implementar driver `TramposDriver.php`.
-- [ ] Implementar driver `JoobleDriver.php`.
-- [ ] Implementar driver `EmpregosDriver.php`.
-- [ ] Registrar os drivers na _factory_ ou injeção de dependência do `CrawlerService`.
-- [ ] Testar integração.
+- [x] Criar `specs/012-novas-fontes.md`. (✓)
+- [x] Implementar driver `GupyDriver.php`.
+- [x] Implementar driver `VagasDriver.php`.
+- [x] Implementar driver `CathoDriver.php`.
+- [x] Implementar driver `InfoJobsDriver.php`.
+- [x] Implementar driver `GlassdoorDriver.php`.
+- [x] Implementar driver `SolidesDriver.php`.
+- [x] Implementar driver `ProgramathorDriver.php`.
+- [x] Implementar driver `GeekHunterDriver.php`.
+- [x] Implementar driver `TramposDriver.php`.
+- [x] Implementar driver `JoobleDriver.php`.
+- [x] Implementar driver `EmpregosDriver.php`.
+- [x] Registrar os drivers na _factory_ ou injeção de dependência do `CrawlerService`.
+- [x] Testar integração.

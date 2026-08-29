@@ -12,6 +12,17 @@ use App\Repositories\JobRepository;
 use App\Services\Drivers\CustomDriver;
 use App\Services\Drivers\IndeedDriver;
 use App\Services\Drivers\LinkedInDriver;
+use App\Services\Drivers\GupyDriver;
+use App\Services\Drivers\VagasDriver;
+use App\Services\Drivers\CathoDriver;
+use App\Services\Drivers\InfoJobsDriver;
+use App\Services\Drivers\GlassdoorDriver;
+use App\Services\Drivers\SolidesDriver;
+use App\Services\Drivers\ProgramathorDriver;
+use App\Services\Drivers\GeekHunterDriver;
+use App\Services\Drivers\TramposDriver;
+use App\Services\Drivers\JoobleDriver;
+use App\Services\Drivers\EmpregosDriver;
 
 final class CrawlerService
 {
@@ -33,7 +44,13 @@ final class CrawlerService
         $location = $params['location'] ?? null;
         $maxPages = min((int) ($params['max_pages'] ?? 3), App::crawlMaxPages());
 
-        if (!in_array($source, ['linkedin', 'indeed', 'custom'], true)) {
+        $validSources = [
+            'linkedin', 'indeed', 'custom',
+            'gupy', 'vagas', 'catho', 'infojobs', 'glassdoor',
+            'solides', 'programathor', 'geekhunter', 'trampos',
+            'jooble', 'empregos'
+        ];
+        if (!in_array($source, $validSources, true)) {
             throw new ValidationException("Source inválido: '{$source}'.");
         }
 
@@ -120,10 +137,21 @@ final class CrawlerService
     private function fetchJobs(string $source, string $keyword, ?string $location, int $maxPages, ?string $url): array
     {
         return match ($source) {
-            'linkedin' => (new LinkedInDriver())->fetch($keyword, $location, $maxPages),
-            'indeed'   => (new IndeedDriver())->fetch($keyword, $location, $maxPages),
-            'custom'   => (new CustomDriver())->fetch($url ?? '', $keyword, $location, $maxPages),
-            default    => throw new CrawlerException("Driver não encontrado: {$source}"),
+            'linkedin'     => (new LinkedInDriver())->fetch($keyword, $location, $maxPages),
+            'indeed'       => (new IndeedDriver())->fetch($keyword, $location, $maxPages),
+            'custom'       => (new CustomDriver())->fetch($url ?? '', $keyword, $location, $maxPages),
+            'gupy'         => (new GupyDriver())->fetch($keyword, $location, $maxPages),
+            'vagas'        => (new VagasDriver())->fetch($keyword, $location, $maxPages),
+            'catho'        => (new CathoDriver())->fetch($keyword, $location, $maxPages),
+            'infojobs'     => (new InfoJobsDriver())->fetch($keyword, $location, $maxPages),
+            'glassdoor'    => (new GlassdoorDriver())->fetch($keyword, $location, $maxPages),
+            'solides'      => (new SolidesDriver())->fetch($keyword, $location, $maxPages),
+            'programathor' => (new ProgramathorDriver())->fetch($keyword, $location, $maxPages),
+            'geekhunter'   => (new GeekHunterDriver())->fetch($keyword, $location, $maxPages),
+            'trampos'      => (new TramposDriver())->fetch($keyword, $location, $maxPages),
+            'jooble'       => (new JoobleDriver())->fetch($keyword, $location, $maxPages),
+            'empregos'     => (new EmpregosDriver())->fetch($keyword, $location, $maxPages),
+            default        => throw new CrawlerException("Driver não encontrado: {$source}"),
         };
     }
 

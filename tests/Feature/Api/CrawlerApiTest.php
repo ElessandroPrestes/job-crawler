@@ -41,7 +41,7 @@ final class CrawlerApiTest extends ApplicationTestCase
     public function testRunReturns422ForInvalidSource(): void
     {
         $r = $this->post('/api/crawl', [
-            'source'  => 'glassdoor',
+            'source'  => 'invalid_source',
             'keyword' => 'PHP Developer',
         ]);
 

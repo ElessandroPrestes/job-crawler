@@ -35,7 +35,7 @@ final class CrawlerServiceTest extends DatabaseTestCase
     {
         return [
             'empty string'  => [''],
-            'unknown source' => ['glassdoor'],
+            'unknown source' => ['invalid_source'],
             'sql injection' => ["linkedin'; DROP TABLE jobs; --"],
             'whitespace'    => ['  '],
         ];
