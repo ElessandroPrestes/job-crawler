@@ -6,3 +6,10 @@ storage/exports/
 .phpunit.cache/
 .phpunit.result.cache
 *.DS_Store
+
+# Node.js
+node_modules/
+
+# Playwright
+tests/e2e/test-results/
+tests/e2e/playwright-report/
