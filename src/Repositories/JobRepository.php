@@ -59,9 +59,7 @@ final class JobRepository
         }
 
         $sql = 'SELECT * FROM jobs';
-        if ($where) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
-        }
+        $sql .= ' WHERE ' . implode(' AND ', $where);
         $sql .= ' ORDER BY COALESCE(published_at, scraped_at) DESC LIMIT ? OFFSET ?';
 
         $params[] = $perPage;
@@ -115,9 +113,7 @@ final class JobRepository
         }
 
         $sql = 'SELECT COUNT(*) FROM jobs';
-        if ($where) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
-        }
+        $sql .= ' WHERE ' . implode(' AND ', $where);
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
