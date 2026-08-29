@@ -1,0 +1,30 @@
+{
+  "name": "job-crawler",
+  "version": "1.0.0",
+  "description": "API RESTful para coleta automatizada, consulta e exportação de vagas de emprego. Suporta múltiplas fontes (LinkedIn, Indeed, drivers customizados), notificações por e-mail e documentação interativa via Swagger UI.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElessandroPrestes/job-crawler.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ElessandroPrestes/job-crawler/issues"
+  },
+  "homepage": "https://github.com/ElessandroPrestes/job-crawler#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^3.4.17"
+  }
+}

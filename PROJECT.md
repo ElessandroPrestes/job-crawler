@@ -16,7 +16,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 
 ### Últimas Atualizações
 - Redirecionamento da raiz (`/`) para a documentação do Swagger (`/docs/`) (SPEC-003).
-- Dashboard visual minimalista na raiz (`/`) com UX/UI modernos (Skeleton, Empty States, Alertas) (SPEC-004 e SPEC-005).
+- Dashboard visual minimalista na raiz (`/`) com UX/UI modernos compilado estaticamente via Tailwind CLI (SPEC-010).
 - Adoção do Makefile como task runner local (SPEC-001).
 - Setup inicial do framework Universal SDD.
 - Setup de testes E2E com Playwright (SPEC-009).
