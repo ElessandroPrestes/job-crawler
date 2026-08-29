@@ -63,6 +63,7 @@ final class IndeedDriver
         $params = [
             'q'    => $keyword,
             'l'    => $location ?? '',
+            'fromage' => '1',
             'start' => $start,
         ];
 

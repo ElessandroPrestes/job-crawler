@@ -20,6 +20,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - Adoção do Makefile como task runner local (SPEC-001).
 - Setup inicial do framework Universal SDD.
 - Setup de testes E2E com Playwright (SPEC-009).
+- Implementação de hard-limit (Filtro 24h) na API e Drivers do Crawler (SPEC-011).
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.

@@ -40,6 +40,14 @@ final class JobRepository
             $params[] = $filters['source'];
         }
 
+        // Filtro nativo de 24h
+        $isSqlite = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite';
+        if ($isSqlite) {
+            $where[] = 'scraped_at >= datetime("now", "-1 day")';
+        } else {
+            $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+        }
+
         if (!empty($filters['contract_type'])) {
             $where[]  = 'contract_type = ?';
             $params[] = $filters['contract_type'];
@@ -86,6 +94,14 @@ final class JobRepository
         if (!empty($filters['source'])) {
             $where[]  = 'source = ?';
             $params[] = $filters['source'];
+        }
+
+        // Filtro nativo de 24h
+        $isSqlite = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite';
+        if ($isSqlite) {
+            $where[] = 'scraped_at >= datetime("now", "-1 day")';
+        } else {
+            $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
         }
 
         if (!empty($filters['contract_type'])) {

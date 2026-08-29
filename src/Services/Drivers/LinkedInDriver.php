@@ -70,7 +70,7 @@ final class LinkedInDriver
             'keywords' => $keyword,
             'start'    => $start,
             'f_WT'     => '2',
-            'f_TPR'    => 'r259200',
+            'f_TPR'    => 'r86400',
         ];
 
         if ($location) {
