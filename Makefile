@@ -53,3 +53,5 @@ test-coverage: ## Executa testes com relatório de cobertura HTML
 
 export: ## Executa o script de exportação (use ARGS="--format=csv")
 	docker-compose exec app php scripts/export.php $(ARGS)
+test-e2e:
+	docker run --rm --network host -v "$(PWD)/tests/e2e:/e2e" -w /e2e mcr.microsoft.com/playwright:v1.44.0-jammy npx playwright test

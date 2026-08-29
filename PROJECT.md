@@ -19,6 +19,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - Dashboard visual minimalista na raiz (`/`) com UX/UI modernos (Skeleton, Empty States, Alertas) (SPEC-004 e SPEC-005).
 - Adoção do Makefile como task runner local (SPEC-001).
 - Setup inicial do framework Universal SDD.
+- Setup de testes E2E com Playwright (SPEC-009).
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.
