@@ -57,6 +57,6 @@ try {
 
     exit(0);
 } catch (Throwable $e) {
-    fwrite(STDERR, "Erro: {$e->getMessage()}\n");
+    fwrite(STDERR, "Erro: {$e->getMessage()}\n" . $e->getTraceAsString() . "\n");
     exit(1);
 }

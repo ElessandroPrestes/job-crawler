@@ -203,6 +203,6 @@ final class JobRepository
         $stmt = $this->pdo->prepare(
             "UPDATE jobs SET is_notified = 1 WHERE id IN ({$placeholders})"
         );
-        $stmt->execute($ids);
+        $stmt->execute(array_values($ids));
     }
 }
