@@ -4,55 +4,41 @@ declare(strict_types=1);
 
 namespace App\Services\Drivers;
 
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\DomCrawler\Crawler;
 
-final class IndeedDriver
+/**
+ * Driver Indeed Brasil — scraping HTML.
+ * URL: https://br.indeed.com/jobs?q=KEYWORD&l=Brasil&fromage=3&start=N
+ * SPEC-014
+ */
+final class IndeedDriver extends AbstractDriver
 {
-    private Client $http;
+    public static ?object $mockClient = null;
 
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    protected function sourceName(): string { return 'indeed'; }
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
         $jobs = [];
 
         for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page * 10);
+            $url  = $this->buildUrl($keyword, $location, $page * 10);
+            $html = '';
 
             try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("Indeed fetch falhou: {$e->getMessage()}", 0, $e);
+                $html = $this->get($url);
+            } catch (CrawlerException) {
+                break;
             }
 
             $parsed = $this->parse($html);
-
             if (empty($parsed)) {
                 break;
             }
 
             $jobs = array_merge($jobs, $parsed);
-
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
+            $this->delay();
         }
 
         return $jobs;
@@ -60,14 +46,13 @@ final class IndeedDriver
 
     private function buildUrl(string $keyword, ?string $location, int $start): string
     {
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'fromage' => '1',
-            'start' => $start,
-        ];
-
-        return 'https://www.indeed.com/jobs?' . http_build_query($params);
+        return 'https://br.indeed.com/jobs?' . http_build_query([
+            'q'       => $keyword,
+            'l'       => $location ?? 'Brasil',
+            'fromage' => '3',
+            'start'   => $start,
+            'sort'    => 'date',
+        ]);
     }
 
     private function parse(string $html): array
@@ -75,23 +60,32 @@ final class IndeedDriver
         $jobs    = [];
         $crawler = new Crawler($html);
 
+        // Indeed renderiza cards com data-jk como ID único
         $crawler->filter('[data-jk]')->each(static function (Crawler $node) use (&$jobs): void {
-            $externalId = $node->attr('data-jk') ?? uniqid('ind_', true);
-            $title      = trim($node->filter('.jobTitle')->text(''));
-            $company    = trim($node->filter('[data-testid="company-name"]')->text(''));
-            $location   = trim($node->filter('[data-testid="text-location"]')->text(''));
+            $jk      = $node->attr('data-jk') ?? '';
+            if ($jk === '') {
+                return;
+            }
+
+            $titleNode   = $node->filter('.jobTitle span[title]');
+            $title       = $titleNode->count() > 0
+                ? trim($titleNode->attr('title') ?? $titleNode->text(''))
+                : trim($node->filter('.jobTitle')->text(''));
+
+            $company  = trim($node->filter('[data-testid="company-name"]')->text(''));
+            $location = trim($node->filter('[data-testid="text-location"]')->text(''));
 
             if ($title === '' || $company === '') {
                 return;
             }
 
             $jobs[] = [
-                'external_id' => $externalId,
+                'external_id' => $jk,
                 'source'      => 'indeed',
                 'title'       => $title,
                 'company'     => $company,
                 'location'    => $location ?: null,
-                'url'         => 'https://www.indeed.com/viewjob?jk=' . $externalId,
+                'url'         => 'https://br.indeed.com/viewjob?jk=' . $jk,
             ];
         });
 

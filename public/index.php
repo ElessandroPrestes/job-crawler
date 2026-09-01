@@ -40,6 +40,7 @@ $router->get('/api/jobs',          [new JobController(), 'index']);
 $router->get('/api/jobs/{id:\d+}', [new JobController(), 'show']);
 
 $router->post('/api/crawl',      [new CrawlerController(), 'run']);
+$router->post('/api/crawl/all',  [new CrawlerController(), 'runAll']);
 $router->get('/api/crawl/logs',  [new CrawlerController(), 'logs']);
 
 $router->get('/api/alerts',              [new AlertController(), 'index']);

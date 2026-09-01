@@ -17,6 +17,21 @@ final class JobRepository
         $this->pdo = Database::connection();
     }
 
+    /**
+     * Normaliza string para deduplicação cross-source.
+     * Remove acentos, lowercase, colapsa espaços e remove pontuação.
+     */
+    public static function normalize(string $value): string
+    {
+        // Transliterar acentos → ASCII
+        $value = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value) ?: $value;
+        // Lowercase + remove pontuação desnecessária
+        $value = strtolower($value);
+        $value = preg_replace('/[^a-z0-9\s]/', ' ', $value) ?? $value;
+        // Colapsar múltiplos espaços
+        return trim(preg_replace('/\s+/', ' ', $value) ?? $value);
+    }
+
     public function findAll(array $filters = [], int $page = 1, int $perPage = 20): array
     {
         $where  = [];
@@ -132,11 +147,16 @@ final class JobRepository
 
     public function upsert(array $data): int
     {
+        $companyNorm = self::normalize($data['company'] ?? '');
+        $titleNorm   = self::normalize($data['title'] ?? '');
+
         $params = [
             $data['external_id'],
             $data['source'],
             $data['title'],
+            $titleNorm,
             $data['company'],
+            $companyNorm,
             $data['location'] ?? null,
             $data['contract_type'] ?? null,
             $data['description'] ?? null,
@@ -154,52 +174,34 @@ final class JobRepository
         if ($isSqlite) {
             $sql = '
                 INSERT INTO jobs
-                    (external_id, source, title, company, location, contract_type,
-                     description, requirements, salary_range, url, published_at, scraped_at,
-                     compatibility_score, matched_skills)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(source, external_id) DO UPDATE SET
-                    title               = excluded.title,
-                    company             = excluded.company,
-                    location            = excluded.location,
-                    contract_type       = excluded.contract_type,
-                    description         = excluded.description,
-                    requirements        = excluded.requirements,
-                    salary_range        = excluded.salary_range,
-                    url                 = excluded.url,
-                    published_at        = excluded.published_at,
+                    (external_id, source, title, title_normalized, company, company_normalized,
+                     location, contract_type, description, requirements, salary_range,
+                     url, published_at, scraped_at, compatibility_score, matched_skills)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(company_normalized, title_normalized) DO UPDATE SET
                     scraped_at          = excluded.scraped_at,
-                    compatibility_score = excluded.compatibility_score,
-                    matched_skills      = excluded.matched_skills
+                    compatibility_score = COALESCE(excluded.compatibility_score, compatibility_score),
+                    matched_skills      = COALESCE(excluded.matched_skills, matched_skills)
             ';
             $params[] = $now;
         } else {
             $sql = '
                 INSERT INTO jobs
-                    (external_id, source, title, company, location, contract_type,
-                     description, requirements, salary_range, url, published_at, scraped_at,
-                     compatibility_score, matched_skills)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+                    (external_id, source, title, title_normalized, company, company_normalized,
+                     location, contract_type, description, requirements, salary_range,
+                     url, published_at, scraped_at, compatibility_score, matched_skills)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
                 ON DUPLICATE KEY UPDATE
-                    title               = VALUES(title),
-                    company             = VALUES(company),
-                    location            = VALUES(location),
-                    contract_type       = VALUES(contract_type),
-                    description         = VALUES(description),
-                    requirements        = VALUES(requirements),
-                    salary_range        = VALUES(salary_range),
-                    url                 = VALUES(url),
-                    published_at        = VALUES(published_at),
                     scraped_at          = NOW(),
-                    compatibility_score = VALUES(compatibility_score),
-                    matched_skills      = VALUES(matched_skills)
+                    compatibility_score = COALESCE(VALUES(compatibility_score), compatibility_score),
+                    matched_skills      = COALESCE(VALUES(matched_skills), matched_skills)
             ';
         }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
-        // rowCount() == 1: nova inserção; == 2: duplicate key update; == 0: sem mudança
+        // rowCount() == 1: nova inserção; == 2: dedup update (não conta como nova); == 0: sem mudança
         return $stmt->rowCount() === 1 ? 1 : 0;
     }
 

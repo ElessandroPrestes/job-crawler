@@ -1,102 +1,55 @@
 <?php
-
 declare(strict_types=1);
-
 namespace App\Services\Drivers;
-
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\DomCrawler\Crawler;
 
-final class InfoJobsDriver
+/**
+ * Driver InfoJobs — scraping HTML.
+ * URL: https://www.infojobs.com.br/empregos-em-,LOCATION/KEYWORD.aspx?Page=N
+ * SPEC-014
+ */
+final class InfoJobsDriver extends AbstractDriver
 {
-    private Client $http;
-
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    protected function sourceName(): string { return 'infojobs'; }
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
         $jobs = [];
-
-        for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page);
-
-            try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("InfoJobs fetch falhou: " . $e->getMessage(), 0, $e);
-            }
-
+        $kwSlug  = str_replace(' ', '-', strtolower($keyword));
+        $locSlug = $location ? str_replace(' ', '-', strtolower($location)) : 'brasil';
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url  = "https://www.infojobs.com.br/empregos-em-{$locSlug}/{$kwSlug}.aspx?Page={$page}&Sort=1";
+            $html = '';
+            try { $html = $this->get($url); } catch (CrawlerException) { break; }
             $parsed = $this->parse($html);
-
-            if (empty($parsed)) {
-                break;
-            }
-
+            if (empty($parsed)) break;
             $jobs = array_merge($jobs, $parsed);
-
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
+            $this->delay();
         }
-
         return $jobs;
-    }
-
-    private function buildUrl(string $keyword, ?string $location, int $page): string
-    {
-        // Add 24h filter when applicable
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'page' => $page,
-            'date' => '24h' // SPEC-011 filter
-        ];
-
-        return 'https://example.com/jobs?' . http_build_query($params);
     }
 
     private function parse(string $html): array
     {
         $jobs    = [];
         $crawler = new Crawler($html);
-        $sourceName = strtolower('InfoJobs');
-
-        $crawler->filter('.job-item')->each(static function (Crawler $node) use (&$jobs, $sourceName): void {
-            $externalId = uniqid($sourceName . '_', true);
-            $title      = trim($node->filter('.title')->text(''));
-            $company    = trim($node->filter('.company')->text(''));
-            $location   = trim($node->filter('.location')->text(''));
-
-            if ($title === '' || $company === '') {
-                return;
-            }
-
+        $crawler->filter('ul#listaVagas li, .vacancy-item, .job-item')->each(static function (Crawler $node) use (&$jobs): void {
+            $link  = $node->filter('a.vaga-nome, a[class*="job"], h2 a')->first();
+            if ($link->count() === 0) return;
+            $href  = $link->attr('href') ?? '';
+            $id    = 'ij_' . md5($href ?: uniqid());
+            $title = trim($link->text(''));
+            $co    = trim($node->filter('.nome-empresa, .company, [class*="company"]')->first()->text(''));
+            $loc   = trim($node->filter('.localidade, .location, [class*="location"]')->first()->text(''));
+            $url   = str_starts_with($href, 'http') ? $href : 'https://www.infojobs.com.br' . $href;
+            if ($title === '') return;
             $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => $sourceName,
-                'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => 'https://example.com/job/' . $externalId,
+                'external_id' => $id, 'source' => 'infojobs',
+                'title' => $title, 'company' => $co ?: 'Não informado',
+                'location' => $loc ?: null, 'url' => $url,
             ];
         });
-
         return $jobs;
     }
 }

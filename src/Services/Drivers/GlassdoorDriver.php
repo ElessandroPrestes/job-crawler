@@ -1,102 +1,57 @@
 <?php
-
 declare(strict_types=1);
-
 namespace App\Services\Drivers;
-
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\DomCrawler\Crawler;
 
-final class GlassdoorDriver
+/**
+ * Driver Glassdoor — scraping HTML.
+ * URL: https://www.glassdoor.com.br/Emprego/brasil-KEYWORD-SRCH_IL.0,6_IN36_KO7,N.htm
+ * SPEC-014
+ */
+final class GlassdoorDriver extends AbstractDriver
 {
-    private Client $http;
-
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    protected function sourceName(): string { return 'glassdoor'; }
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
         $jobs = [];
+        $slug = urlencode(str_replace(' ', '-', $keyword));
 
-        for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page);
-
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url  = "https://www.glassdoor.com.br/Emprego/brasil-{$slug}-empregos-SRCH_IL.0,6_IN36_KO7,50_IP{$page}.htm";
+            $html = '';
             try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("Glassdoor fetch falhou: " . $e->getMessage(), 0, $e);
-            }
+                $html = $this->get($url);
+            } catch (CrawlerException) { break; }
 
             $parsed = $this->parse($html);
-
-            if (empty($parsed)) {
-                break;
-            }
-
+            if (empty($parsed)) break;
             $jobs = array_merge($jobs, $parsed);
-
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
+            $this->delay();
         }
-
         return $jobs;
-    }
-
-    private function buildUrl(string $keyword, ?string $location, int $page): string
-    {
-        // Add 24h filter when applicable
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'page' => $page,
-            'date' => '24h' // SPEC-011 filter
-        ];
-
-        return 'https://example.com/jobs?' . http_build_query($params);
     }
 
     private function parse(string $html): array
     {
         $jobs    = [];
         $crawler = new Crawler($html);
-        $sourceName = strtolower('Glassdoor');
-
-        $crawler->filter('.job-item')->each(static function (Crawler $node) use (&$jobs, $sourceName): void {
-            $externalId = uniqid($sourceName . '_', true);
-            $title      = trim($node->filter('.title')->text(''));
-            $company    = trim($node->filter('.company')->text(''));
-            $location   = trim($node->filter('.location')->text(''));
-
-            if ($title === '' || $company === '') {
-                return;
-            }
-
+        $crawler->filter('li[data-jobid]')->each(static function (Crawler $node) use (&$jobs): void {
+            $id      = $node->attr('data-jobid') ?? '';
+            $title   = trim($node->filter('[data-test="job-title"]')->text(''));
+            $company = trim($node->filter('[data-test="employer-short-name"]')->text(''));
+            $loc     = trim($node->filter('[data-test="emp-location"]')->text(''));
+            if ($title === '' || $id === '') return;
             $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => $sourceName,
+                'external_id' => 'gd_' . $id,
+                'source'      => 'glassdoor',
                 'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => 'https://example.com/job/' . $externalId,
+                'company'     => $company ?: 'Não informado',
+                'location'    => $loc ?: null,
+                'url'         => 'https://www.glassdoor.com.br/job-listing/j?jl=' . $id,
             ];
         });
-
         return $jobs;
     }
 }

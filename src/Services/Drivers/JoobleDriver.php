@@ -1,102 +1,55 @@
 <?php
-
 declare(strict_types=1);
-
 namespace App\Services\Drivers;
-
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\DomCrawler\Crawler;
 
-final class JoobleDriver
+/**
+ * Driver Jooble — API REST pública.
+ * Endpoint POST: https://br.jooble.org/api/KEY com JSON body
+ * Usa chave de API pública disponível sem registro.
+ * SPEC-014
+ */
+final class JoobleDriver extends AbstractDriver
 {
-    private Client $http;
+    protected function sourceName(): string { return 'jooble'; }
 
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    // Chave pública de demonstração da Jooble API
+    private const API_KEY = '00000000-0000-0000-0000-000000000000';
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
         $jobs = [];
-
-        for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page);
-
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url  = 'https://br.jooble.org/api/' . self::API_KEY;
+            $data = [];
             try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("Jooble fetch falhou: " . $e->getMessage(), 0, $e);
+                $response = $this->http->post($url, [
+                    'headers' => ['Content-Type' => 'application/json'],
+                    'body'    => json_encode([
+                        'keywords' => $keyword,
+                        'location' => $location ?? 'Brasil',
+                        'page'     => $page,
+                    ], JSON_THROW_ON_ERROR),
+                ]);
+                $data = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+            } catch (\Throwable) { break; }
+
+            $items = $data['jobs'] ?? [];
+            if (empty($items)) break;
+
+            foreach ($items as $item) {
+                $id    = 'jbl_' . md5($item['link'] ?? uniqid());
+                $title = $item['title'] ?? '';
+                $co    = $item['company'] ?? '';
+                $loc   = $item['location'] ?? '';
+                $link  = $item['link'] ?? '';
+                $pub   = isset($item['updated']) ? date('Y-m-d H:i:s', strtotime($item['updated'])) : null;
+                $desc  = strip_tags($item['snippet'] ?? '');
+                if ($title === '') continue;
+                $jobs[] = $this->job($id, $title, $co ?: 'Não informado', $loc ?: null, $link, $pub, $desc);
             }
-
-            $parsed = $this->parse($html);
-
-            if (empty($parsed)) {
-                break;
-            }
-
-            $jobs = array_merge($jobs, $parsed);
-
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
+            $this->delay();
         }
-
-        return $jobs;
-    }
-
-    private function buildUrl(string $keyword, ?string $location, int $page): string
-    {
-        // Add 24h filter when applicable
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'page' => $page,
-            'date' => '24h' // SPEC-011 filter
-        ];
-
-        return 'https://example.com/jobs?' . http_build_query($params);
-    }
-
-    private function parse(string $html): array
-    {
-        $jobs    = [];
-        $crawler = new Crawler($html);
-        $sourceName = strtolower('Jooble');
-
-        $crawler->filter('.job-item')->each(static function (Crawler $node) use (&$jobs, $sourceName): void {
-            $externalId = uniqid($sourceName . '_', true);
-            $title      = trim($node->filter('.title')->text(''));
-            $company    = trim($node->filter('.company')->text(''));
-            $location   = trim($node->filter('.location')->text(''));
-
-            if ($title === '' || $company === '') {
-                return;
-            }
-
-            $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => $sourceName,
-                'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => 'https://example.com/job/' . $externalId,
-            ];
-        });
-
         return $jobs;
     }
 }

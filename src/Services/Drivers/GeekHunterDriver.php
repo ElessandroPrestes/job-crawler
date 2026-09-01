@@ -4,99 +4,70 @@ declare(strict_types=1);
 
 namespace App\Services\Drivers;
 
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\DomCrawler\Crawler;
 
-final class GeekHunterDriver
+/**
+ * Driver GeekHunter — API REST pública.
+ * Endpoint: https://www.geekhunter.com.br/api/v1/vacancies?search=KEYWORD&per_page=20&page=N
+ * SPEC-014
+ */
+final class GeekHunterDriver extends AbstractDriver
 {
-    private Client $http;
-
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    protected function sourceName(): string { return 'geekhunter'; }
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
         $jobs = [];
 
-        for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page);
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url  = $this->buildUrl($keyword, $page);
+            $data = [];
 
             try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("GeekHunter fetch falhou: " . $e->getMessage(), 0, $e);
-            }
-
-            $parsed = $this->parse($html);
-
-            if (empty($parsed)) {
+                $data = $this->getJson($url, [
+                    'Accept' => 'application/json',
+                    'Origin' => 'https://www.geekhunter.com.br',
+                ]);
+            } catch (CrawlerException) {
                 break;
             }
 
-            $jobs = array_merge($jobs, $parsed);
-
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
+            $items = $data['vacancies'] ?? ($data['data'] ?? []);
+            if (empty($items)) {
+                break;
             }
+
+            foreach ($items as $item) {
+                $id      = (string) ($item['id'] ?? '');
+                $title   = $item['title'] ?? ($item['name'] ?? '');
+                $company = $item['company']['name'] ?? ($item['company_name'] ?? '');
+                $loc     = $item['city'] ?? ($item['location'] ?? '');
+                $jobUrl  = $item['url'] ?? ('https://www.geekhunter.com.br/vagas/' . $id);
+                $pubAt   = isset($item['created_at'])
+                    ? date('Y-m-d H:i:s', strtotime($item['created_at']))
+                    : null;
+                $desc    = $item['description'] ?? null;
+
+                if ($title === '' || $company === '' || $id === '') {
+                    continue;
+                }
+
+                $jobs[] = $this->job($id, $title, $company, $loc ?: null, $jobUrl, $pubAt, $desc);
+            }
+
+            $this->delay();
         }
 
         return $jobs;
     }
 
-    private function buildUrl(string $keyword, ?string $location, int $page): string
+    private function buildUrl(string $keyword, int $page): string
     {
-        // Add 24h filter when applicable
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'page' => $page,
-            'date' => '24h' // SPEC-011 filter
-        ];
-
-        return 'https://example.com/jobs?' . http_build_query($params);
-    }
-
-    private function parse(string $html): array
-    {
-        $jobs    = [];
-        $crawler = new Crawler($html);
-        $sourceName = strtolower('GeekHunter');
-
-        $crawler->filter('.job-item')->each(static function (Crawler $node) use (&$jobs, $sourceName): void {
-            $externalId = uniqid($sourceName . '_', true);
-            $title      = trim($node->filter('.title')->text(''));
-            $company    = trim($node->filter('.company')->text(''));
-            $location   = trim($node->filter('.location')->text(''));
-
-            if ($title === '' || $company === '') {
-                return;
-            }
-
-            $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => $sourceName,
-                'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => 'https://example.com/job/' . $externalId,
-            ];
-        });
-
-        return $jobs;
+        return 'https://www.geekhunter.com.br/api/v1/vacancies?' . http_build_query([
+            'search'   => $keyword,
+            'per_page' => 20,
+            'page'     => $page,
+            'country'  => 'BR',
+        ]);
     }
 }

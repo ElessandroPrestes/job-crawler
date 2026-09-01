@@ -4,99 +4,68 @@ declare(strict_types=1);
 
 namespace App\Services\Drivers;
 
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use Symfony\Component\DomCrawler\Crawler;
 
-final class GupyDriver
+/**
+ * Driver Gupy — API REST pública de vagas.
+ * Endpoint: https://portal.api.gupy.io/api/job?name=KEYWORD&limit=20&offset=N
+ * SPEC-014
+ */
+final class GupyDriver extends AbstractDriver
 {
-    private Client $http;
-
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    protected function sourceName(): string { return 'gupy'; }
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
-        $jobs = [];
+        $jobs  = [];
+        $limit = 20;
 
         for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page);
+            $url    = $this->buildUrl($keyword, $page * $limit, $limit);
+            $data   = [];
 
             try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("Gupy fetch falhou: " . $e->getMessage(), 0, $e);
+                $data = $this->getJson($url, [
+                    'Accept' => 'application/json',
+                ]);
+            } catch (CrawlerException) {
+                break; // fonte indisponível — não bloqueia os outros sources
             }
 
-            $parsed = $this->parse($html);
-
-            if (empty($parsed)) {
+            $items = $data['data'] ?? [];
+            if (empty($items)) {
                 break;
             }
 
-            $jobs = array_merge($jobs, $parsed);
+            foreach ($items as $item) {
+                $id      = (string) ($item['id'] ?? '');
+                $title   = $item['name'] ?? '';
+                $company = $item['company']['name'] ?? ($item['careerPageName'] ?? '');
+                $loc     = $item['city'] ?? ($item['state'] ?? '');
+                $jobUrl  = $item['jobUrl'] ?? ('https://portal.gupy.io/job/' . $id);
+                $pubAt   = isset($item['publishedDate'])
+                    ? date('Y-m-d H:i:s', strtotime($item['publishedDate']))
+                    : null;
 
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
+                if ($title === '' || $company === '' || $id === '') {
+                    continue;
+                }
+
+                $jobs[] = $this->job($id, $title, $company, $loc ?: null, $jobUrl, $pubAt);
             }
+
+            $this->delay();
         }
 
         return $jobs;
     }
 
-    private function buildUrl(string $keyword, ?string $location, int $page): string
+    private function buildUrl(string $keyword, int $offset, int $limit): string
     {
-        // Add 24h filter when applicable
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'page' => $page,
-            'date' => '24h' // SPEC-011 filter
-        ];
-
-        return 'https://example.com/jobs?' . http_build_query($params);
-    }
-
-    private function parse(string $html): array
-    {
-        $jobs    = [];
-        $crawler = new Crawler($html);
-        $sourceName = strtolower('Gupy');
-
-        $crawler->filter('.job-item')->each(static function (Crawler $node) use (&$jobs, $sourceName): void {
-            $externalId = uniqid($sourceName . '_', true);
-            $title      = trim($node->filter('.title')->text(''));
-            $company    = trim($node->filter('.company')->text(''));
-            $location   = trim($node->filter('.location')->text(''));
-
-            if ($title === '' || $company === '') {
-                return;
-            }
-
-            $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => $sourceName,
-                'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => 'https://example.com/job/' . $externalId,
-            ];
-        });
-
-        return $jobs;
+        return 'https://portal.api.gupy.io/api/job?' . http_build_query([
+            'name'   => $keyword,
+            'offset' => $offset,
+            'limit'  => $limit,
+        ]);
     }
 }

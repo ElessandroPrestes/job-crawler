@@ -4,96 +4,76 @@ declare(strict_types=1);
 
 namespace App\Services\Drivers;
 
-use App\Config\App;
 use App\Exceptions\CrawlerException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\DomCrawler\Crawler;
 
-final class ProgramathorDriver
+/**
+ * Driver Programathor — scraping HTML.
+ * URL: https://programathor.com.br/jobs?search=KEYWORD&page=N
+ * SPEC-014
+ */
+final class ProgramathorDriver extends AbstractDriver
 {
-    private Client $http;
-
-    public function __construct()
-    {
-        $this->http = new Client([
-            'timeout'         => 30,
-            'connect_timeout' => 10,
-            'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml',
-            ],
-            'verify' => true,
-        ]);
-    }
+    protected function sourceName(): string { return 'programathor'; }
 
     public function fetch(string $keyword, ?string $location, int $maxPages): array
     {
         $jobs = [];
 
-        for ($page = 0; $page < $maxPages; $page++) {
-            $url = $this->buildUrl($keyword, $location, $page);
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url  = $this->buildUrl($keyword, $page);
+            $html = '';
 
             try {
-                $response = $this->http->get($url);
-                $html     = (string) $response->getBody();
-            } catch (GuzzleException $e) {
-                throw new CrawlerException("Programathor fetch falhou: " . $e->getMessage(), 0, $e);
+                $html = $this->get($url);
+            } catch (CrawlerException) {
+                break;
             }
 
             $parsed = $this->parse($html);
-
             if (empty($parsed)) {
                 break;
             }
 
             $jobs = array_merge($jobs, $parsed);
-
-            $delayMs = App::crawlDelayMs();
-            if ($delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
+            $this->delay();
         }
 
         return $jobs;
     }
 
-    private function buildUrl(string $keyword, ?string $location, int $page): string
+    private function buildUrl(string $keyword, int $page): string
     {
-        // Add 24h filter when applicable
-        $params = [
-            'q'    => $keyword,
-            'l'    => $location ?? '',
-            'page' => $page,
-            'date' => '24h' // SPEC-011 filter
-        ];
-
-        return 'https://example.com/jobs?' . http_build_query($params);
+        return 'https://programathor.com.br/jobs?' . http_build_query([
+            'search' => $keyword,
+            'page'   => $page,
+        ]);
     }
 
     private function parse(string $html): array
     {
         $jobs    = [];
         $crawler = new Crawler($html);
-        $sourceName = strtolower('Programathor');
 
-        $crawler->filter('.job-item')->each(static function (Crawler $node) use (&$jobs, $sourceName): void {
-            $externalId = uniqid($sourceName . '_', true);
-            $title      = trim($node->filter('.title')->text(''));
-            $company    = trim($node->filter('.company')->text(''));
-            $location   = trim($node->filter('.location')->text(''));
+        $crawler->filter('a.cell-list-developer')->each(static function (Crawler $node) use (&$jobs): void {
+            $href    = $node->attr('href') ?? '';
+            $id      = md5($href);
+            $title   = trim($node->filter('h2')->text(''));
+            $company = trim($node->filter('.tag-list span')->first()->text(''));
+            $loc     = trim($node->filter('.city')->text(''));
+            $url     = str_starts_with($href, 'http') ? $href : 'https://programathor.com.br' . $href;
 
-            if ($title === '' || $company === '') {
+            if ($title === '' || $id === '') {
                 return;
             }
 
             $jobs[] = [
-                'external_id' => $externalId,
-                'source'      => $sourceName,
+                'external_id' => 'pth_' . $id,
+                'source'      => 'programathor',
                 'title'       => $title,
-                'company'     => $company,
-                'location'    => $location ?: null,
-                'url'         => 'https://example.com/job/' . $externalId,
+                'company'     => $company ?: 'Não informado',
+                'location'    => $loc ?: null,
+                'url'         => $url,
             ];
         });
 

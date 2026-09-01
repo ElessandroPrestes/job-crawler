@@ -109,7 +109,17 @@
         const sourceStyles = {
             'linkedin': 'bg-blue-100 text-blue-700 border-blue-200',
             'indeed': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-            'custom': 'bg-teal-100 text-teal-700 border-teal-200',
+            'gupy': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            'geekhunter': 'bg-purple-100 text-purple-700 border-purple-200',
+            'programathor': 'bg-teal-100 text-teal-700 border-teal-200',
+            'vagas': 'bg-sky-100 text-sky-700 border-sky-200',
+            'glassdoor': 'bg-green-100 text-green-700 border-green-200',
+            'solides': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+            'catho': 'bg-rose-100 text-rose-700 border-rose-200',
+            'infojobs': 'bg-orange-100 text-orange-700 border-orange-200',
+            'jooble': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+            'jobbol': 'bg-slate-200 text-slate-800 border-slate-300',
+            'trampos': 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
             'default': 'bg-slate-100 text-slate-700 border-slate-200'
         };
 
@@ -120,38 +130,36 @@
             const errorMessage = document.getElementById('error-message');
             
             if (refreshBtn.disabled) return;
+            
+            const originalText = refreshBtn.innerHTML;
             refreshBtn.disabled = true;
-            refreshIcon.classList.add('animate-spin');
+            refreshBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando em 13 fontes...`;
 
             try {
-                // Solicita que a API busque novas vagas na web
-                const response = await fetch('/api/crawl', {
+                const response = await fetch('/api/crawl/all', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        source: 'linkedin',
                         keyword: 'php laravel node.js typescript backend',
                         location: 'brasil'
                     })
                 });
-                
+
                 const result = await response.json();
                 
                 if (!response.ok) {
                     throw new Error(result.error || `Crawler falhou (${response.status})`);
                 }
                 
-                // Exibe uma notificação de sucesso opcional (ou log)
-                console.log(`Crawl finalizado: ${result.data.jobs_found} vagas encontradas, ${result.data.jobs_new} novas.`);
+                console.log(`Crawl finalizado. Vagas encontradas: ${result.data.jobs_found}, Novas: ${result.data.jobs_new}`);
                 errorAlert.classList.add('hidden');
-                
             } catch (err) {
                 console.error("Erro no crawler:", err);
                 errorMessage.textContent = err.message || "Não foi possível realizar o crawl. Verifique se o servidor está rodando.";
                 errorAlert.classList.remove('hidden');
             } finally {
                 refreshBtn.disabled = false;
-                // Busca as vagas no banco de dados e exibe na tela
+                refreshBtn.innerHTML = originalText;
                 await loadJobs();
             }
         }

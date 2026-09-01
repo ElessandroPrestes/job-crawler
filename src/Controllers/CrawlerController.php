@@ -9,18 +9,21 @@ use App\Http\Request;
 use App\Middleware\RateLimiter;
 use App\Repositories\CrawlLogRepository;
 use App\Services\CrawlerService;
+use App\Services\MultiSourceCrawlerService;
 
 final class CrawlerController
 {
-    private CrawlerService     $crawler;
-    private CrawlLogRepository $logs;
-    private RateLimiter        $limiter;
+    private CrawlerService            $crawler;
+    private MultiSourceCrawlerService $multiCrawler;
+    private CrawlLogRepository        $logs;
+    private RateLimiter               $limiter;
 
     public function __construct()
     {
-        $this->crawler = new CrawlerService();
-        $this->logs    = new CrawlLogRepository();
-        $this->limiter = new RateLimiter();
+        $this->crawler      = new CrawlerService();
+        $this->multiCrawler = new MultiSourceCrawlerService();
+        $this->logs         = new CrawlLogRepository();
+        $this->limiter      = new RateLimiter();
     }
 
     public function run(Request $request, array $params): void
@@ -28,6 +31,16 @@ final class CrawlerController
         $this->limiter->check($request->ip(), 5);
 
         $result = $this->crawler->execute($request->body());
+
+        JsonResponse::ok($result);
+    }
+
+    public function runAll(Request $request, array $params): void
+    {
+        $this->limiter->check($request->ip(), 5); // limite de requisições
+
+        // ExecuteAll faz o loop em todos os sources, consolida os resultados e aplica os filtros
+        $result = $this->multiCrawler->executeAll($request->body());
 
         JsonResponse::ok($result);
     }

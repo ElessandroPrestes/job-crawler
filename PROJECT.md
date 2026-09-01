@@ -26,7 +26,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - **[Bugfix]** `LinkedInDriver`: Acesso a `->attr('href')` em node vazio causava `RuntimeException`; corrigido com verificação `count() > 0`.
 - **[Bugfix]** `CrawlerService::filterRelevant()`: Filtro restritivo de título (`php`/`node`) removido — vagas válidas com skill na descrição eram descartadas.
 - **[Bugfix]** `public/index.html`: Frontend corrigido para chamar `source: 'linkedin'` (estava `'custom'` com URL de exemplo inválida).
-- **[Feature/SPEC-013]** Filtro de compatibilidade com currículo (≥80% match): `ResumeProfile` (50+ skills ponderadas + SCORE_BASELINE), `CompatibilityScorer` (3 etapas: disq. por título, disq. por framework exclusivo em texto completo, score ponderado 0-100). `CrawlerService::scoreAndFilter()` descarta vagas <80% e ordena por score desc. Migration 013 adiciona `compatibility_score` e `matched_skills` na tabela `jobs`. Resolve caso vagas com título genérico e Python/FastAPI na descrição (caso real: Jobbol/Locus Software, set/2026).
+- **[Feature/SPEC-014]** Crawling Multi-Source com Deduplicação: 13 plataformas integradas via `MultiSourceCrawlerService` e endpoint consolidado (`/api/crawl/all`). Drivers reescritos utilizando APIs JSON reais (Gupy, GeekHunter, Jooble) e scraping robusto (LinkedIn, Indeed, Glassdoor, Vagas, Programathor, Catho, InfoJobs, Sólides, Trampos, Jobbol, Empregos). Deduplicação cross-source garantida por novo índice UNIQUE `(company_normalized, title_normalized)` via Migration 014.
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.
