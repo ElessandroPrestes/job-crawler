@@ -23,6 +23,8 @@ use App\Services\Drivers\GeekHunterDriver;
 use App\Services\Drivers\TramposDriver;
 use App\Services\Drivers\JoobleDriver;
 use App\Services\Drivers\EmpregosDriver;
+use App\Services\CompatibilityScorer;
+use App\Services\ResumeProfile;
 
 final class CrawlerService
 {
@@ -68,6 +70,7 @@ final class CrawlerService
         try {
             $rawJobs = $this->fetchJobs($source, $keyword, $location, $maxPages, $params['url'] ?? null);
             $rawJobs = $this->filterRelevant($rawJobs);
+            $rawJobs = $this->scoreAndFilter($rawJobs); // SPEC-013: descarta vagas < 80% de match
         } catch (CrawlerException $e) {
             $this->logs->finish($logId, 'failed', 0, 0, $e->getMessage());
             throw $e;
@@ -98,6 +101,33 @@ final class CrawlerService
             'notifications_sent' => $notified,
             'duration_ms'        => (int) ((microtime(true) - $start) * 1000),
         ];
+    }
+
+    /**
+     * Pontua as vagas por compatibilidade com o currículo e descarta as abaixo do mínimo.
+     * Ordena as aprovadas por score decrescente (melhor match primeiro).
+     * SPEC-013
+     */
+    private function scoreAndFilter(array $jobs): array
+    {
+        $scorer  = new CompatibilityScorer();
+        $results = [];
+
+        foreach ($jobs as $job) {
+            $result = $scorer->score($job);
+
+            if ($result['score'] < ResumeProfile::MIN_SCORE) {
+                continue;
+            }
+
+            $job['compatibility_score'] = $result['score'];
+            $job['matched_skills']      = json_encode($result['matched'], JSON_UNESCAPED_UNICODE);
+            $results[]                  = $job;
+        }
+
+        usort($results, static fn ($a, $b) => $b['compatibility_score'] <=> $a['compatibility_score']);
+
+        return $results;
     }
 
     /**

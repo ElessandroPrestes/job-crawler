@@ -144,6 +144,8 @@ final class JobRepository
             $data['salary_range'] ?? null,
             $data['url'],
             $data['published_at'] ?? null,
+            isset($data['compatibility_score']) ? (int) $data['compatibility_score'] : null,
+            $data['matched_skills'] ?? null,
         ];
 
         $isSqlite = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
@@ -153,38 +155,44 @@ final class JobRepository
             $sql = '
                 INSERT INTO jobs
                     (external_id, source, title, company, location, contract_type,
-                     description, requirements, salary_range, url, published_at, scraped_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     description, requirements, salary_range, url, published_at, scraped_at,
+                     compatibility_score, matched_skills)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(source, external_id) DO UPDATE SET
-                    title         = excluded.title,
-                    company       = excluded.company,
-                    location      = excluded.location,
-                    contract_type = excluded.contract_type,
-                    description   = excluded.description,
-                    requirements  = excluded.requirements,
-                    salary_range  = excluded.salary_range,
-                    url           = excluded.url,
-                    published_at  = excluded.published_at,
-                    scraped_at    = excluded.scraped_at
+                    title               = excluded.title,
+                    company             = excluded.company,
+                    location            = excluded.location,
+                    contract_type       = excluded.contract_type,
+                    description         = excluded.description,
+                    requirements        = excluded.requirements,
+                    salary_range        = excluded.salary_range,
+                    url                 = excluded.url,
+                    published_at        = excluded.published_at,
+                    scraped_at          = excluded.scraped_at,
+                    compatibility_score = excluded.compatibility_score,
+                    matched_skills      = excluded.matched_skills
             ';
             $params[] = $now;
         } else {
             $sql = '
                 INSERT INTO jobs
                     (external_id, source, title, company, location, contract_type,
-                     description, requirements, salary_range, url, published_at, scraped_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                     description, requirements, salary_range, url, published_at, scraped_at,
+                     compatibility_score, matched_skills)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
                 ON DUPLICATE KEY UPDATE
-                    title         = VALUES(title),
-                    company       = VALUES(company),
-                    location      = VALUES(location),
-                    contract_type = VALUES(contract_type),
-                    description   = VALUES(description),
-                    requirements  = VALUES(requirements),
-                    salary_range  = VALUES(salary_range),
-                    url           = VALUES(url),
-                    published_at  = VALUES(published_at),
-                    scraped_at    = NOW()
+                    title               = VALUES(title),
+                    company             = VALUES(company),
+                    location            = VALUES(location),
+                    contract_type       = VALUES(contract_type),
+                    description         = VALUES(description),
+                    requirements        = VALUES(requirements),
+                    salary_range        = VALUES(salary_range),
+                    url                 = VALUES(url),
+                    published_at        = VALUES(published_at),
+                    scraped_at          = NOW(),
+                    compatibility_score = VALUES(compatibility_score),
+                    matched_skills      = VALUES(matched_skills)
             ';
         }
 

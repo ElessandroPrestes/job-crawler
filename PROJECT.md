@@ -26,7 +26,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - **[Bugfix]** `LinkedInDriver`: Acesso a `->attr('href')` em node vazio causava `RuntimeException`; corrigido com verificação `count() > 0`.
 - **[Bugfix]** `CrawlerService::filterRelevant()`: Filtro restritivo de título (`php`/`node`) removido — vagas válidas com skill na descrição eram descartadas.
 - **[Bugfix]** `public/index.html`: Frontend corrigido para chamar `source: 'linkedin'` (estava `'custom'` com URL de exemplo inválida).
-- **[Feature]** Filtro geográfico restrito ao Brasil: `LinkedInDriver` força `geoId=106057199` (BR) em todas as buscas; `CrawlerService::filterRelevant()` rejeita localizações internacionais explícitas e aceita apenas termos BR/Remoto.
+- **[Feature/SPEC-013]** Filtro de compatibilidade com currículo (≥80% match): `ResumeProfile` (50+ skills ponderadas + SCORE_BASELINE), `CompatibilityScorer` (3 etapas: disq. por título, disq. por framework exclusivo em texto completo, score ponderado 0-100). `CrawlerService::scoreAndFilter()` descarta vagas <80% e ordena por score desc. Migration 013 adiciona `compatibility_score` e `matched_skills` na tabela `jobs`. Resolve caso vagas com título genérico e Python/FastAPI na descrição (caso real: Jobbol/Locus Software, set/2026).
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.
