@@ -22,6 +22,10 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - Setup de testes E2E com Playwright (SPEC-009).
 - Implementação de hard-limit (Filtro 24h) na API e Drivers do Crawler (SPEC-011).
 - Integração de múltiplas novas fontes de vagas (Gupy, Vagas, Catho, etc) (SPEC-012).
+- **[Bugfix]** `LinkedInDriver`: User-Agent corrigido para simular browser real (Chrome/Windows) — eliminava bloqueio 403 do LinkedIn.
+- **[Bugfix]** `LinkedInDriver`: Acesso a `->attr('href')` em node vazio causava `RuntimeException`; corrigido com verificação `count() > 0`.
+- **[Bugfix]** `CrawlerService::filterRelevant()`: Filtro restritivo de título (`php`/`node`) removido — vagas válidas com skill na descrição eram descartadas.
+- **[Bugfix]** `public/index.html`: Frontend corrigido para chamar `source: 'linkedin'` (estava `'custom'` com URL de exemplo inválida).
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.

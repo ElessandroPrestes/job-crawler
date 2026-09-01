@@ -21,7 +21,7 @@ final class LinkedInDriver
             'timeout'         => 30,
             'connect_timeout' => 10,
             'headers'         => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; JobCrawler/1.0)',
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
                 'Accept'     => 'text/html,application/xhtml+xml',
             ],
             'verify' => true,
@@ -95,7 +95,8 @@ final class LinkedInDriver
             $title      = trim($node->filter('.base-search-card__title')->text(''));
             $company    = trim($node->filter('.base-search-card__subtitle')->text(''));
             $location   = trim($node->filter('.job-search-card__location')->text(''));
-            $url        = $node->filter('a.base-card__full-link')->attr('href') ?? '';
+            $linkNode   = $node->filter('a.base-card__full-link');
+            $url        = $linkNode->count() > 0 ? ($linkNode->attr('href') ?? '') : '';
 
             if ($title === '' || $company === '') {
                 return;

@@ -38,7 +38,7 @@
                 <h2 class="text-2xl font-bold text-slate-900">Radar de Vagas</h2>
                 <p class="text-sm text-slate-500 mt-1">Oportunidades recentes extraídas automaticamente.</p>
             </div>
-            <button onclick="loadJobs()" id="refresh-btn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 transition-all active:scale-95">
+            <button onclick="crawlJobs()" id="refresh-btn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 transition-all active:scale-95">
                 <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 <span>Atualizar Vagas</span>
             </button>
@@ -112,6 +112,49 @@
             'custom': 'bg-teal-100 text-teal-700 border-teal-200',
             'default': 'bg-slate-100 text-slate-700 border-slate-200'
         };
+
+        async function crawlJobs() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const errorAlert = document.getElementById('error-alert');
+            const errorMessage = document.getElementById('error-message');
+            
+            if (refreshBtn.disabled) return;
+            refreshBtn.disabled = true;
+            refreshIcon.classList.add('animate-spin');
+
+            try {
+                // Solicita que a API busque novas vagas na web
+                const response = await fetch('/api/crawl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source: 'linkedin', 
+                        keyword: 'php',
+                        location: 'brasil'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || `Crawler falhou (${response.status})`);
+                }
+                
+                // Exibe uma notificação de sucesso opcional (ou log)
+                console.log(`Crawl finalizado: ${result.data.jobs_found} vagas encontradas, ${result.data.jobs_new} novas.`);
+                errorAlert.classList.add('hidden');
+                
+            } catch (err) {
+                console.error("Erro no crawler:", err);
+                errorMessage.textContent = err.message || "Não foi possível realizar o crawl. Verifique se o servidor está rodando.";
+                errorAlert.classList.remove('hidden');
+            } finally {
+                refreshBtn.disabled = false;
+                // Busca as vagas no banco de dados e exibe na tela
+                await loadJobs();
+            }
+        }
 
         async function loadJobs() {
             const grid = document.getElementById('jobs-grid');

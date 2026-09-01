@@ -105,12 +105,6 @@ final class CrawlerService
         return array_values(array_filter($jobs, static function (array $job): bool {
             $title = strtolower($job['title'] ?? '');
 
-            $titleMatch = str_contains($title, 'php') || str_contains($title, 'node');
-
-            if (!$titleMatch) {
-                return false;
-            }
-
             if (!empty($job['published_at'])) {
                 $ts = strtotime($job['published_at']);
                 if ($ts !== false && $ts < strtotime('-3 days')) {
