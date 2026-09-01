@@ -100,11 +100,35 @@ final class CrawlerService
         ];
     }
 
+    /**
+     * Termos que confirmam que a vaga é do Brasil ou aceita candidatos BR.
+     */
+    private const BRAZIL_TERMS = [
+        'brasil', 'brazil', 'br',
+        'são paulo', 'sao paulo', 'rio de janeiro',
+        'belo horizonte', 'curitiba', 'brasília', 'brasilia',
+        'florianópolis', 'florianopolis', 'porto alegre', 'salvador',
+        'fortaleza', 'recife', 'manaus', 'goiânia', 'goiania',
+        'remoto', 'remote', 'home office', 'híbrido', 'hibrido',
+        '100% remoto', 'trabalho remoto',
+    ];
+
+    /**
+     * Termos que indicam que a vaga é explicitamente internacional/fora do Brasil.
+     * Se um desses aparecer na localização, a vaga é descartada.
+     */
+    private const INTERNATIONAL_TERMS = [
+        'united states', 'united kingdom', 'worldwide', 'global',
+        'europe', 'north america', 'latam', 'anywhere',
+        'canada', 'germany', 'france', 'spain', 'portugal',
+        'india', 'mexico', 'argentina', 'colombia', 'chile',
+        ', us', '(us)', '(usa)', ', uk', '(uk)',
+    ];
+
     private function filterRelevant(array $jobs): array
     {
         return array_values(array_filter($jobs, static function (array $job): bool {
-            $title = strtolower($job['title'] ?? '');
-
+            // Filtro temporal: descartar vagas com mais de 3 dias
             if (!empty($job['published_at'])) {
                 $ts = strtotime($job['published_at']);
                 if ($ts !== false && $ts < strtotime('-3 days')) {
@@ -112,18 +136,28 @@ final class CrawlerService
                 }
             }
 
-            $loc = strtolower($job['location'] ?? '');
+            $loc = strtolower(trim($job['location'] ?? ''));
 
+            // Sem localização: o LinkedIn já filtrou por geoId=BR, aceitar
             if ($loc === '') {
                 return true;
             }
 
-            foreach (['brasil', 'brazil', 'remoto', 'remote', 'home office'] as $term) {
+            // Rejeitar explicitamente vagas com localização internacional conhecida
+            foreach (self::INTERNATIONAL_TERMS as $intl) {
+                if (str_contains($loc, $intl)) {
+                    return false;
+                }
+            }
+
+            // Aceitar apenas se encontrar algum termo brasileiro na localização
+            foreach (self::BRAZIL_TERMS as $term) {
                 if (str_contains($loc, $term)) {
                     return true;
                 }
             }
 
+            // Localização desconhecida: descartar por segurança
             return false;
         }));
     }

@@ -64,6 +64,9 @@ final class LinkedInDriver
         'brazil' => '106057199',
     ];
 
+    /** GeoId do Brasil como padrão absoluto — só exibimos vagas BR. */
+    private const BRAZIL_GEO_ID = '106057199';
+
     private function buildUrl(string $keyword, ?string $location, int $start): string
     {
         $params = [
@@ -71,6 +74,7 @@ final class LinkedInDriver
             'start'    => $start,
             'f_WT'     => '2',
             'f_TPR'    => 'r86400',
+            'geoId'    => self::BRAZIL_GEO_ID, // padrão: Brasil
         ];
 
         if ($location) {
@@ -78,6 +82,7 @@ final class LinkedInDriver
             if (isset(self::GEO_IDS[$key])) {
                 $params['geoId'] = self::GEO_IDS[$key];
             } else {
+                // localização textual adicional (ex: "São Paulo"), mantém geoId BR
                 $params['location'] = $location;
             }
         }
