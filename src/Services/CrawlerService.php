@@ -106,26 +106,23 @@ final class CrawlerService
     /**
      * Pontua as vagas por compatibilidade com o currículo e descarta as abaixo do mínimo.
      * Ordena as aprovadas por score decrescente (melhor match primeiro).
-     * SPEC-013
+     * SPEC-013 / LLM Classifier
      */
     private function scoreAndFilter(array $jobs): array
     {
-        $scorer  = new CompatibilityScorer();
+        $scorer  = new LlmCompatibilityScorer();
+        $scoredJobs = $scorer->scoreBatch($jobs);
+        
         $results = [];
-
-        foreach ($jobs as $job) {
-            $result = $scorer->score($job);
-
-            if ($result['score'] < ResumeProfile::MIN_SCORE) {
+        foreach ($scoredJobs as $job) {
+            // Usa 80 como fallback se não houver MIN_SCORE, mas referenciando ResumeProfile
+            if (($job['compatibility_score'] ?? 0) < ResumeProfile::MIN_SCORE) {
                 continue;
             }
-
-            $job['compatibility_score'] = $result['score'];
-            $job['matched_skills']      = json_encode($result['matched'], JSON_UNESCAPED_UNICODE);
-            $results[]                  = $job;
+            $results[] = $job;
         }
 
-        usort($results, static fn ($a, $b) => $b['compatibility_score'] <=> $a['compatibility_score']);
+        usort($results, static fn ($a, $b) => ($b['compatibility_score'] ?? 0) <=> ($a['compatibility_score'] ?? 0));
 
         return $results;
     }
