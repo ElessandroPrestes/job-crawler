@@ -2,7 +2,7 @@
 ## Estado Canônico do Projeto
 
 ## ⚠️ Dívidas Técnicas e Pontos de Atenção
-- **[Testes/SPEC-014]**: A Migration 014 alterou a restrição `UNIQUE` de `(source, external_id)` para `(company_normalized, title_normalized)`. No entanto, os testes de integração em `JobRepositoryTest`, `JobRepositoryExtraTest`, `JobsApiTest`, entre outros, ainda inserem vagas mockadas com o mesmo título (`PHP Developer`) e mesma empresa (`Tech Corp`). Isso causa falhas massivas de `Integrity constraint violation` no banco de dados SQLite utilizado pelo PHPUnit. Recomenda-se uma refatoração nas classes `insertJob` e `seedJob` das *Test Cases* base para utilizarem identificadores únicos (`uniqid()`) na geração de nomes de empresas e títulos, validando corretamente as novas regras.
+- ~~**[Testes/SPEC-014]**: A Migration 014 alterou a restrição `UNIQUE` de `(source, external_id)` para `(company_normalized, title_normalized)`. No entanto, os testes de integração em `JobRepositoryTest`, `JobRepositoryExtraTest`, `JobsApiTest`, entre outros, ainda inseriam vagas mockadas com o mesmo título e mesma empresa, causando falhas.~~ **[RESOLVIDO]**: As *Test Cases* base foram atualizadas para utilizar `uniqid()` na geração dos nomes de empresas e títulos. Adicionalmente, erros de Strict Comparison do PHPStan nos drivers Catho e Programathor foram corrigidos. A suíte de testes volta a passar com sucesso.
 
 **Descrição**: API RESTful para coleta automatizada, consulta e exportação de vagas de emprego.
 **Repositório**: ElessandroPrestes/job-crawler

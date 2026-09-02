@@ -45,7 +45,7 @@ final class CathoDriver extends AbstractDriver
             $jobs[] = [
                 'external_id' => 'cat_' . $id, 'source' => 'catho',
                 'title' => $title, 'company' => $company ?: 'Não informado',
-                'location' => $loc ?: null, 'url' => $url ?: 'https://www.catho.com.br',
+                'location' => $loc ?: null, 'url' => $url,
             ];
         });
         return $jobs;

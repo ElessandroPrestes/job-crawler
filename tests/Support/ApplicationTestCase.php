@@ -151,8 +151,8 @@ abstract class ApplicationTestCase extends TestCase
         $data = array_merge([
             'external_id'   => 'ext-' . uniqid(),
             'source'        => 'linkedin',
-            'title'         => 'PHP Developer',
-            'company'       => 'Tech Corp',
+            'title'         => 'PHP Developer ' . uniqid(),
+            'company'       => 'Tech Corp ' . uniqid(),
             'location'      => 'São Paulo',
             'contract_type' => 'PJ',
             'url'           => 'https://linkedin.com/jobs/1',

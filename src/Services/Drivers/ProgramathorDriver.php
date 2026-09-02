@@ -63,7 +63,7 @@ final class ProgramathorDriver extends AbstractDriver
             $loc     = trim($node->filter('.city')->text(''));
             $url     = str_starts_with($href, 'http') ? $href : 'https://programathor.com.br' . $href;
 
-            if ($title === '' || $id === '') {
+            if ($title === '') {
                 return;
             }
 

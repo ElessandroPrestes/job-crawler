@@ -31,8 +31,6 @@ use App\Services\Drivers\JobbolDriver;
  */
 final class MultiSourceCrawlerService
 {
-    private JobRepository      $jobs;
-    private CrawlLogRepository $logs;
     private EmailService       $email;
     private CrawlerService     $crawlerService;
 
@@ -43,27 +41,17 @@ final class MultiSourceCrawlerService
      */
     private const SOURCES_BY_TIER = [
         // Tier 1 — obrigatório
-        'linkedin',
-        'indeed',
-        'gupy',
-        'geekhunter',
-        'programathor',
-        'vagas',
-        // Tier 2 — muito recomendado
-        'glassdoor',
-        'solides',
-        'catho',
-        'infojobs',
-        // Tier 3 — complementar
-        'jooble',
-        'trampos',
-        'jobbol',
+        'linkedin', 'indeed', 'gupy', 'glassdoor',
+        
+        // Tier 2 — alta relevância
+        'geekhunter', 'vagas', 'programathor', 'catho',
+        
+        // Tier 3 — massivos / menor precisão
+        'infojobs', 'solides', 'trampos', 'jobbol', 'empregos', 'jooble'
     ];
 
     public function __construct()
     {
-        $this->jobs           = new JobRepository();
-        $this->logs           = new CrawlLogRepository();
         $this->email          = new EmailService();
         $this->crawlerService = new CrawlerService();
     }

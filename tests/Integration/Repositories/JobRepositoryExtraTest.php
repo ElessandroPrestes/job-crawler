@@ -21,9 +21,12 @@ final class JobRepositoryExtraTest extends DatabaseTestCase
                                string $location = 'Brasil', string $contractType = 'PJ',
                                string $url = 'http://example.com', bool $notified = false): void
     {
+        $titleNorm = strtolower($title);
+        $companyNorm = strtolower($company);
+
         $this->pdo->exec("
-            INSERT INTO jobs (external_id, source, title, company, location, contract_type, url, scraped_at, is_notified)
-            VALUES ('{$externalId}', '{$source}', '{$title}', '{$company}', '{$location}', '{$contractType}', '{$url}', datetime('now'), " . ($notified ? 1 : 0) . ")
+            INSERT INTO jobs (external_id, source, title, title_normalized, company, company_normalized, location, contract_type, url, scraped_at, is_notified)
+            VALUES ('{$externalId}', '{$source}', '{$title}', '{$titleNorm}', '{$company}', '{$companyNorm}', '{$location}', '{$contractType}', '{$url}', datetime('now'), " . ($notified ? 1 : 0) . ")
         ");
     }
 
