@@ -71,7 +71,7 @@ final class CrawlerService
             $rawJobs = $this->fetchJobs($source, $keyword, $location, $maxPages, $params['url'] ?? null);
             $rawJobs = $this->filterRelevant($rawJobs);
             $rawJobs = $this->scoreAndFilter($rawJobs); // SPEC-013: descarta vagas < 80% de match
-        } catch (CrawlerException $e) {
+        } catch (\Throwable $e) {
             $this->logs->finish($logId, 'failed', 0, 0, $e->getMessage());
             throw $e;
         }
