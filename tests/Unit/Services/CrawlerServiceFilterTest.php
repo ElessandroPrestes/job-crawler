@@ -50,14 +50,14 @@ final class CrawlerServiceFilterTest extends DatabaseTestCase
     {
         $jobs = [['title' => 'Java Senior Developer', 'company' => 'Corp', 'location' => 'brasil', 'url' => 'http://x']];
         $result = $this->filter($jobs);
-        $this->assertCount(0, $result);
+        $this->assertCount(1, $result);
     }
 
     public function testPythonTitleIsFiltered(): void
     {
         $jobs = [['title' => 'Python Data Engineer', 'company' => 'Corp', 'location' => 'remote', 'url' => 'http://x']];
         $result = $this->filter($jobs);
-        $this->assertCount(0, $result);
+        $this->assertCount(1, $result);
     }
 
     // ── Localização ────────────────────────────────────────────────────────────
@@ -163,10 +163,12 @@ final class CrawlerServiceFilterTest extends DatabaseTestCase
 
         $result = $this->filter($jobs);
 
-        // PHP em brasil (passa), Java (não passa), Node em remoto (passa), Ruby (não passa), PHP em UK (não passa)
-        $this->assertCount(2, $result);
+        // All in BR pass because title filter is removed, UK is filtered out by location
+        $this->assertCount(4, $result);
         $this->assertSame('PHP Developer', $result[0]['title']);
-        $this->assertSame('Node.js Dev', $result[1]['title']);
+        $this->assertSame('Java Developer', $result[1]['title']);
+        $this->assertSame('Node.js Dev', $result[2]['title']);
+        $this->assertSame('Ruby on Rails Dev', $result[3]['title']);
     }
 
     public function testEmptyJobsArrayReturnsEmpty(): void

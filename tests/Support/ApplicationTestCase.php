@@ -91,25 +91,29 @@ abstract class ApplicationTestCase extends TestCase
         return $router;
     }
 
-    private function createSchema(PDO $pdo): void
+    protected function createSchema(PDO $pdo): void
     {
         $pdo->exec('
             CREATE TABLE IF NOT EXISTS jobs (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                external_id   TEXT    NOT NULL,
-                source        TEXT    NOT NULL,
-                title         TEXT    NOT NULL,
-                company       TEXT    NOT NULL,
-                location      TEXT,
-                contract_type TEXT,
-                description   TEXT,
-                requirements  TEXT,
-                salary_range  TEXT,
-                url           TEXT    NOT NULL DEFAULT \'\',
-                published_at  TEXT,
-                scraped_at    TEXT    NOT NULL DEFAULT (datetime(\'now\')),
-                is_notified   INTEGER NOT NULL DEFAULT 0,
-                UNIQUE (source, external_id)
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                external_id         TEXT    NOT NULL,
+                source              TEXT    NOT NULL,
+                title               TEXT    NOT NULL,
+                title_normalized    TEXT    NOT NULL DEFAULT \'\',
+                company             TEXT    NOT NULL,
+                company_normalized  TEXT    NOT NULL DEFAULT \'\',
+                location            TEXT,
+                contract_type       TEXT,
+                description         TEXT,
+                requirements        TEXT,
+                salary_range        TEXT,
+                url                 TEXT    NOT NULL DEFAULT \'\',
+                published_at        TEXT,
+                scraped_at          TEXT    NOT NULL DEFAULT (datetime(\'now\')),
+                is_notified         INTEGER NOT NULL DEFAULT 0,
+                compatibility_score INTEGER,
+                matched_skills      TEXT,
+                UNIQUE (company_normalized, title_normalized)
             )
         ');
 

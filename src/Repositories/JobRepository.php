@@ -55,12 +55,21 @@ final class JobRepository
             $params[] = $filters['source'];
         }
 
-        // Filtro nativo de 24h
+        $interval = $filters['since'] ?? '24h';
         $isSqlite = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite';
-        if ($isSqlite) {
-            $where[] = 'scraped_at >= datetime("now", "-1 day")';
+
+        if ($interval === '3d') {
+            if ($isSqlite) {
+                $where[] = 'scraped_at >= datetime("now", "-3 days")';
+            } else {
+                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
+            }
         } else {
-            $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+            if ($isSqlite) {
+                $where[] = 'scraped_at >= datetime("now", "-1 day")';
+            } else {
+                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+            }
         }
 
         if (!empty($filters['contract_type'])) {
@@ -68,10 +77,7 @@ final class JobRepository
             $params[] = $filters['contract_type'];
         }
 
-        if (!empty($filters['since'])) {
-            $where[]  = 'COALESCE(published_at, scraped_at) >= ?';
-            $params[] = $filters['since'];
-        }
+
 
         $sql = 'SELECT * FROM jobs';
         $sql .= ' WHERE ' . implode(' AND ', $where);
@@ -109,12 +115,21 @@ final class JobRepository
             $params[] = $filters['source'];
         }
 
-        // Filtro nativo de 24h
+        $interval = $filters['since'] ?? '24h';
         $isSqlite = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite';
-        if ($isSqlite) {
-            $where[] = 'scraped_at >= datetime("now", "-1 day")';
+
+        if ($interval === '3d') {
+            if ($isSqlite) {
+                $where[] = 'scraped_at >= datetime("now", "-3 days")';
+            } else {
+                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
+            }
         } else {
-            $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+            if ($isSqlite) {
+                $where[] = 'scraped_at >= datetime("now", "-1 day")';
+            } else {
+                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+            }
         }
 
         if (!empty($filters['contract_type'])) {
@@ -122,10 +137,7 @@ final class JobRepository
             $params[] = $filters['contract_type'];
         }
 
-        if (!empty($filters['since'])) {
-            $where[]  = 'COALESCE(published_at, scraped_at) >= ?';
-            $params[] = $filters['since'];
-        }
+
 
         $sql = 'SELECT COUNT(*) FROM jobs';
         $sql .= ' WHERE ' . implode(' AND ', $where);
@@ -150,28 +162,29 @@ final class JobRepository
         $companyNorm = self::normalize($data['company'] ?? '');
         $titleNorm   = self::normalize($data['title'] ?? '');
 
-        $params = [
-            $data['external_id'],
-            $data['source'],
-            $data['title'],
-            $titleNorm,
-            $data['company'],
-            $companyNorm,
-            $data['location'] ?? null,
-            $data['contract_type'] ?? null,
-            $data['description'] ?? null,
-            $data['requirements'] ?? null,
-            $data['salary_range'] ?? null,
-            $data['url'],
-            $data['published_at'] ?? null,
-            isset($data['compatibility_score']) ? (int) $data['compatibility_score'] : null,
-            $data['matched_skills'] ?? null,
-        ];
-
         $isSqlite = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
         $now      = date('Y-m-d H:i:s');
 
         if ($isSqlite) {
+            $params = [
+                $data['external_id'],
+                $data['source'],
+                $data['title'],
+                $titleNorm,
+                $data['company'],
+                $companyNorm,
+                $data['location'] ?? null,
+                $data['contract_type'] ?? null,
+                $data['description'] ?? null,
+                $data['requirements'] ?? null,
+                $data['salary_range'] ?? null,
+                $data['url'],
+                $data['published_at'] ?? null,
+                $now, // scraped_at
+                isset($data['compatibility_score']) ? (int) $data['compatibility_score'] : null,
+                $data['matched_skills'] ?? null,
+            ];
+
             $sql = '
                 INSERT INTO jobs
                     (external_id, source, title, title_normalized, company, company_normalized,
@@ -183,8 +196,25 @@ final class JobRepository
                     compatibility_score = COALESCE(excluded.compatibility_score, compatibility_score),
                     matched_skills      = COALESCE(excluded.matched_skills, matched_skills)
             ';
-            $params[] = $now;
         } else {
+            $params = [
+                $data['external_id'],
+                $data['source'],
+                $data['title'],
+                $titleNorm,
+                $data['company'],
+                $companyNorm,
+                $data['location'] ?? null,
+                $data['contract_type'] ?? null,
+                $data['description'] ?? null,
+                $data['requirements'] ?? null,
+                $data['salary_range'] ?? null,
+                $data['url'],
+                $data['published_at'] ?? null,
+                isset($data['compatibility_score']) ? (int) $data['compatibility_score'] : null,
+                $data['matched_skills'] ?? null,
+            ];
+
             $sql = '
                 INSERT INTO jobs
                     (external_id, source, title, title_normalized, company, company_normalized,

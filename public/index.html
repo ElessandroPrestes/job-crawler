@@ -38,10 +38,16 @@
                 <h2 class="text-2xl font-bold text-slate-900">Radar de Vagas</h2>
                 <p class="text-sm text-slate-500 mt-1">Oportunidades recentes extraídas automaticamente.</p>
             </div>
-            <button onclick="crawlJobs()" id="refresh-btn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 transition-all active:scale-95">
-                <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <span>Atualizar Vagas</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <select id="interval-select" class="rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" onchange="loadJobs()">
+                    <option value="24h">Últimas 24h</option>
+                    <option value="3d">Últimos 3 dias</option>
+                </select>
+                <button onclick="crawlJobs()" id="refresh-btn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 transition-all active:scale-95">
+                    <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Atualizar Vagas</span>
+                </button>
+            </div>
         </div>
 
         <!-- Feedback Alert (Error) -->
@@ -84,7 +90,7 @@
         <!-- Empty State -->
         <div id="empty-state" class="hidden flex flex-col items-center justify-center py-24 px-4 text-center rounded-2xl bg-white border border-dashed border-slate-300">
             <div class="h-20 w-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012-2v2M7 7h10"></path></svg>
             </div>
             <h3 class="mt-2 text-lg font-semibold text-slate-900">Nenhuma vaga por aqui</h3>
             <p class="mt-1 text-sm text-slate-500 max-w-sm">
@@ -128,6 +134,7 @@
             const refreshBtn = document.getElementById('refresh-btn');
             const errorAlert = document.getElementById('error-alert');
             const errorMessage = document.getElementById('error-message');
+            const interval = document.getElementById('interval-select').value;
             
             if (refreshBtn.disabled) return;
             
@@ -141,7 +148,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         keyword: 'php laravel node.js typescript backend',
-                        location: 'brasil'
+                        location: 'brasil',
+                        since: interval
                     })
                 });
 
@@ -171,6 +179,7 @@
             const errorAlert = document.getElementById('error-alert');
             const errorMessage = document.getElementById('error-message');
             const refreshIcon = document.getElementById('refresh-icon');
+            const interval = document.getElementById('interval-select').value;
             
             // Reset states
             grid.innerHTML = '';
@@ -185,7 +194,7 @@
             try {
                 // Adicionamos um tempo mínimo para dar um feedback visual (UX)
                 const [response] = await Promise.all([
-                    fetch('/api/jobs'),
+                    fetch(`/api/jobs?since=${interval}`),
                     new Promise(res => setTimeout(res, 600)) 
                 ]);
                 

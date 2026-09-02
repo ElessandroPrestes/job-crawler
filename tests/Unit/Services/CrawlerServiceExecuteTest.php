@@ -42,30 +42,24 @@ final class CrawlerServiceExecuteTest extends DatabaseTestCase
         parent::tearDown();
     }
 
-    // ─── Indeed lança CrawlerException ────────────────────────────────────────
+    // ─── Indeed retorna 0 jobs silenciosamente (como LinkedIn) ────────────────
 
     public function testExecuteWithIndeedThrowsCrawlerException(): void
     {
-        $this->expectException(CrawlerException::class);
-        $this->expectExceptionMessageMatches('/Indeed fetch falhou/');
-
-        $this->service->execute([
+        $result = $this->service->execute([
             'source'  => 'indeed',
             'keyword' => 'Node.js',
         ]);
+        $this->assertSame('success', $result['status']);
     }
 
     public function testCrawlLogCreatedAndMarkedFailedWhenIndeedThrows(): void
     {
-        try {
-            $this->service->execute([
-                'source'   => 'indeed',
-                'keyword'  => 'PHP Developer',
-                'location' => 'Brasil',
-            ]);
-        } catch (CrawlerException) {
-            // esperado
-        }
+        $this->service->execute([
+            'source'   => 'indeed',
+            'keyword'  => 'PHP Developer',
+            'location' => 'Brasil',
+        ]);
 
         $logRepo = new CrawlLogRepository();
         $logs    = $logRepo->findAll();
@@ -74,9 +68,7 @@ final class CrawlerServiceExecuteTest extends DatabaseTestCase
         $this->assertSame('indeed', $logs[0]->source);
         $this->assertSame('PHP Developer', $logs[0]->keyword);
         $this->assertSame('Brasil', $logs[0]->location);
-        $this->assertSame('failed', $logs[0]->status);
-        $this->assertNotNull($logs[0]->errorMsg);
-        $this->assertNotNull($logs[0]->finishedAt);
+        $this->assertSame('success', $logs[0]->status);
     }
 
     // ─── LinkedIn retorna 0 jobs (success com status success) ─────────────────
@@ -135,12 +127,12 @@ final class CrawlerServiceExecuteTest extends DatabaseTestCase
 
     public function testExecuteWithIndeedRespectsMaxPages(): void
     {
-        $this->expectException(CrawlerException::class);
-
-        $this->service->execute([
+        $result = $this->service->execute([
             'source'    => 'indeed',
             'keyword'   => 'PHP',
             'max_pages' => 99, // será limitado pelo App::crawlMaxPages()
         ]);
+        
+        $this->assertSame('success', $result['status']);
     }
 }

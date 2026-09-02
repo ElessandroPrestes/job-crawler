@@ -27,6 +27,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - **[Bugfix]** `CrawlerService::filterRelevant()`: Filtro restritivo de título (`php`/`node`) removido — vagas válidas com skill na descrição eram descartadas.
 - **[Bugfix]** `public/index.html`: Frontend corrigido para chamar `source: 'linkedin'` (estava `'custom'` com URL de exemplo inválida).
 - **[Feature/SPEC-014]** Crawling Multi-Source com Deduplicação: 13 plataformas integradas via `MultiSourceCrawlerService` e endpoint consolidado (`/api/crawl/all`). Drivers reescritos utilizando APIs JSON reais (Gupy, GeekHunter, Jooble) e scraping robusto (LinkedIn, Indeed, Glassdoor, Vagas, Programathor, Catho, InfoJobs, Sólides, Trampos, Jobbol, Empregos). Deduplicação cross-source garantida por novo índice UNIQUE `(company_normalized, title_normalized)` via Migration 014.
+- **[Feature]** Adicionado filtro dinâmico de 24h e 3 dias na interface (`public/index.html`) e no repositório (`JobRepository`). O crawler volta a focar em 3 dias (`LinkedInDriver`) enquanto a view filtra nativamente via parâmetro `since`. Resolvido problema visual onde badges poderiam ocultar fontes secundárias como Indeed em detrimento do volume do LinkedIn.
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.
