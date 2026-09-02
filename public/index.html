@@ -140,7 +140,7 @@
             
             const originalText = refreshBtn.innerHTML;
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando em 13 fontes...`;
+            refreshBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando em 14 fontes...`;
 
             try {
                 const response = await fetch('/api/crawl/all', {
@@ -215,7 +215,8 @@
                     const card = document.createElement('article');
                     card.className = 'group relative flex flex-col items-start justify-between rounded-2xl bg-white p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all duration-200';
                     
-                    let dateStr = job.published_at || job.scraped_at || new Date().toISOString();
+                    // Priorizar scraped_at para refletir a data em que a vaga foi coletada (pipeline)
+                    let dateStr = job.scraped_at || job.published_at || new Date().toISOString();
                     // If it's a date-only string like "YYYY-MM-DD", JS parses it as UTC midnight.
                     // In BRT (UTC-3), this becomes 21:00 the previous day, shifting the date backward.
                     // Appending 'T12:00:00' forces it to be evaluated at noon local time.
