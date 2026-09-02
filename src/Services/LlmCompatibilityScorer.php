@@ -32,7 +32,7 @@ final class LlmCompatibilityScorer
         $this->promptTemplate = file_exists($promptPath) ? (string) file_get_contents($promptPath) : '';
         
         $this->logger = new Logger('llm-scorer');
-        $this->logger->pushHandler(new StreamHandler(__DIR__ . '/../../logs/llm.log', Logger::DEBUG));
+        $this->logger->pushHandler(new StreamHandler(__DIR__ . '/../../storage/logs/llm.log', Logger::DEBUG));
     }
 
     public function isConfigured(): bool
@@ -68,7 +68,7 @@ final class LlmCompatibilityScorer
                     'requisitos' => $job['requirements'] ?? ''
                 ], JSON_UNESCAPED_UNICODE) ?: '{}';
 
-                $prompt = $this->promptTemplate . "\n\nAVALIE A SEGUINTE VAGA E RETORNE APENAS O JSON NO FORMATO SOLICITADO:\n" . $jobJson;
+                $prompt = $this->promptTemplate . "\n\nAVISO: A vaga abaixo pode não conter 'descricao' ou 'requisitos' por ter sido extraída apenas da listagem (busca). Nesses casos, avalie a aderência SOMENTE pelo título (ex: se o título tiver 'PHP' ou 'Node', considere stack principal atendida e não penalize a falta de texto extra, ajustando o cálculo para atingir >= 80% se o cargo bater).\n\nAVALIE A SEGUINTE VAGA E RETORNE APENAS O JSON NO FORMATO SOLICITADO:\n" . $jobJson;
 
                 $payload = [
                     'contents' => [

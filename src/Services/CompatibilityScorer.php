@@ -52,10 +52,10 @@ final class CompatibilityScorer
         }
 
         // Normalização: usamos como referência o peso das 8 skills mais importantes do perfil
-        // (php=10, laravel=10, node.js=9, typescript=8, aws=8, docker=8, mysql=7, redis=7 = 67 pts)
-        // Uma vaga com as skills core do perfil atinge facilmente esse baseline → score alto.
-        // Uma vaga com skills irrelevantes vai ter score baixo → filtro eficaz.
-        $baseline = ResumeProfile::SCORE_BASELINE;
+        // Normalização: se não temos descrição, o título sozinho não pode somar 67 pontos.
+        // Reduzimos o baseline para 25 se não houver descrição, para permitir que vagas
+        // cujo título contenha as palavras-chave principais (ex: PHP, Node) atinjam 80%.
+        $baseline = ($description === '' && $requirements === '') ? 25 : ResumeProfile::SCORE_BASELINE;
         $score    = (int) round(($earnedWeight / $baseline) * 100);
 
         return [
