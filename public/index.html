@@ -215,7 +215,18 @@
                     const card = document.createElement('article');
                     card.className = 'group relative flex flex-col items-start justify-between rounded-2xl bg-white p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all duration-200';
                     
-                    const date = new Date(job.scraped_at || job.published_at || new Date()).toLocaleDateString('pt-BR');
+                    let dateStr = job.published_at || job.scraped_at || new Date().toISOString();
+                    // If it's a date-only string like "YYYY-MM-DD", JS parses it as UTC midnight.
+                    // In BRT (UTC-3), this becomes 21:00 the previous day, shifting the date backward.
+                    // Appending 'T12:00:00' forces it to be evaluated at noon local time.
+                    if (typeof dateStr === 'string' && dateStr.length === 10) {
+                        dateStr += 'T12:00:00';
+                    } else if (typeof dateStr === 'string' && dateStr.includes(' ')) {
+                        // Replace space with T to ensure cross-browser parsing (e.g. Safari)
+                        dateStr = dateStr.replace(' ', 'T');
+                    }
+                    
+                    const date = new Date(dateStr).toLocaleDateString('pt-BR');
                     
                     // Style badging based on source
                     const srcStyle = sourceStyles[job.source?.toLowerCase()] || sourceStyles.default;
