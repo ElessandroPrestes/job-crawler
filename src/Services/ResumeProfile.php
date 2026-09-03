@@ -175,14 +175,6 @@ final class ResumeProfile
         'sinatra',
         'rspec',
         'rubygems',
-
-        // React ecosystem (não é Vue nem Angular)
-        'react hooks',
-        'react native',
-        'next.js',
-        'nextjs',
-        'remix',
-        'gatsby',
     ];
 
     /** Score mínimo (0–100) para uma vaga ser aceita no pipeline. */
