@@ -64,6 +64,8 @@ final class JobRepository
             } else {
                 $where[] = 'COALESCE(published_at, scraped_at) >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
             }
+        } elseif ($interval === 'all') {
+            // Sem restrição de data — todas as vagas
         } else {
             if ($isSqlite) {
                 $where[] = 'COALESCE(published_at, scraped_at) >= datetime("now", "-1 day")';
@@ -124,6 +126,8 @@ final class JobRepository
             } else {
                 $where[] = 'COALESCE(published_at, scraped_at) >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
             }
+        } elseif ($interval === 'all') {
+            // Sem restrição de data — todas as vagas
         } else {
             if ($isSqlite) {
                 $where[] = 'COALESCE(published_at, scraped_at) >= datetime("now", "-1 day")';

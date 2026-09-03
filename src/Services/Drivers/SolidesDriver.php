@@ -17,7 +17,7 @@ final class SolidesDriver extends AbstractDriver
     {
         $jobs = [];
         for ($page = 1; $page <= $maxPages; $page++) {
-            $url  = 'https://vaga.solides.com.br/?' . http_build_query(['q' => $keyword, 'page' => $page]);
+            $url  = 'https://vagas.solides.com.br/?' . http_build_query(['q' => $keyword, 'page' => $page]);
             $html = '';
             try { $html = $this->get($url); } catch (CrawlerException) { break; }
             $parsed = $this->parse($html);
@@ -39,7 +39,7 @@ final class SolidesDriver extends AbstractDriver
             $title   = trim($node->filter('h2, h3, .title, .vacancy-title')->first()->text(''));
             $company = trim($node->filter('.company, .empresa, .vacancy-company')->first()->text(''));
             $loc     = trim($node->filter('.location, .cidade, .vacancy-location')->first()->text(''));
-            $url     = str_starts_with($href, 'http') ? $href : 'https://vaga.solides.com.br' . $href;
+            $url     = str_starts_with($href, 'http') ? $href : 'https://vagas.solides.com.br' . $href;
             if ($title === '') return;
             $jobs[] = [
                 'external_id' => $id, 'source' => 'solides',

@@ -33,18 +33,25 @@ final class CathoDriver extends AbstractDriver
     {
         $jobs    = [];
         $crawler = new Crawler($html);
-        $crawler->filter('[data-jobid], .job-card, article[class*="job"]')->each(static function (Crawler $node) use (&$jobs): void {
-            $id      = $node->attr('data-jobid') ?? md5($node->html());
-            $title   = trim($node->filter('h2, h3, .job-title, [class*="title"]')->first()->text(''));
-            $company = trim($node->filter('.company-name, [class*="company"]')->first()->text(''));
-            $loc     = trim($node->filter('.location, [class*="location"]')->first()->text(''));
-            $link    = $node->filter('a')->first();
+        $crawler->filter('article.offer, article[class*="offer"], [data-jobid], .job-card, article[class*="job"]')->each(static function (Crawler $node) use (&$jobs): void {
+            $link    = $node->filter('h2 a, h3 a, a[data-navigation-offer], a')->first();
             $href    = $link->count() > 0 ? ($link->attr('href') ?? '') : '';
+            if (preg_match('/\/(\d+)(?:\?|$)/', $href, $m)) {
+                $id = $m[1];
+            } else {
+                $id = $node->attr('data-jobid') ?? md5($node->html());
+            }
+            $titleNode = $node->filter('h2, h3, .title_offer, .job-title, [class*="title"]')->first();
+            $title   = $titleNode->count() > 0 ? trim($titleNode->text('')) : '';
+            $companyNode = $node->filter('p span.text-12, .company-name, [class*="company"]')->first();
+            $company = $companyNode->count() > 0 ? trim($companyNode->text('')) : 'Não informado';
+            $locNode = $node->filter('.location, [class*="location"]')->first();
+            $loc     = $locNode->count() > 0 ? trim($locNode->text('')) : 'Brasil';
             $url     = str_starts_with($href, 'http') ? $href : 'https://www.catho.com.br' . $href;
             if ($title === '') return;
             $jobs[] = [
                 'external_id' => 'cat_' . $id, 'source' => 'catho',
-                'title' => $title, 'company' => $company ?: 'Não informado',
+                'title' => $title, 'company' => $company,
                 'location' => $loc ?: null, 'url' => $url,
             ];
         });

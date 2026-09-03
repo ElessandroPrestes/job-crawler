@@ -51,11 +51,10 @@ final class CompatibilityScorer
             }
         }
 
-        // Normalização: usamos como referência o peso das 8 skills mais importantes do perfil
-        // Normalização: se não temos descrição, o título sozinho não pode somar 67 pontos.
-        // Reduzimos o baseline para 25 se não houver descrição, para permitir que vagas
-        // cujo título contenha as palavras-chave principais (ex: PHP, Node) atinjam 80%.
-        $baseline = ($description === '' && $requirements === '') ? 25 : ResumeProfile::SCORE_BASELINE;
+        // Normalização: se não temos descrição, o título avalia a tecnologia principal da vaga.
+        // Reduzimos o baseline para 10 se não houver descrição, para permitir que vagas
+        // cujo título contenha as palavras-chave principais (ex: PHP peso 10, Node peso 9/18) atinjam >= 80%.
+        $baseline = ($description === '' && $requirements === '') ? 10 : ResumeProfile::SCORE_BASELINE;
         $score    = (int) round(($earnedWeight / $baseline) * 100);
 
         return [

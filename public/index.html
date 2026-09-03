@@ -3,26 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Crawler - Vagas Encontradas</title>
+    <title>Job Crawler - Radar de Vagas</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="bg-gray-50 min-h-screen font-sans text-slate-800 antialiased selection:bg-blue-200">
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800 antialiased selection:bg-blue-200">
 
     <!-- Header -->
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300">
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="bg-blue-600 text-white p-1.5 rounded-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-blue-700 to-indigo-600 text-white p-2 rounded-xl shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                     </svg>
                 </div>
-                <h1 class="text-xl font-extrabold tracking-tight text-slate-900">JobCrawler</h1>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-slate-900 leading-none">JobCrawler</h1>
+                    <span class="text-[11px] font-medium text-slate-500">Pipeline de Vagas & Curadoria</span>
+                </div>
             </div>
             
             <div class="flex items-center gap-4">
-                <a href="/docs/" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-700">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Crawler Ativo
+                </div>
+                <a href="/docs/" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     API Docs
                 </a>
             </div>
@@ -30,56 +40,137 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         
-        <!-- Toolbar -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-            <div>
-                <h2 class="text-2xl font-bold text-slate-900">Radar de Vagas</h2>
-                <p class="text-sm text-slate-500 mt-1">Oportunidades recentes extraídas automaticamente.</p>
+        <!-- Pipeline Metrics Bar -->
+        <section aria-label="Métricas do Pipeline" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="p-2.5 rounded-lg bg-blue-50 text-blue-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012-2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Total no Radar</p>
+                    <p id="metric-total" class="text-xl font-bold text-slate-900">-</p>
+                </div>
             </div>
-            <div class="flex items-center gap-2">
-                <select id="interval-select" class="rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" onchange="loadJobs()">
-                    <option value="24h">Últimas 24h</option>
-                    <option value="3d">Últimos 3 dias</option>
-                </select>
-                <button onclick="crawlJobs()" id="refresh-btn" class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 transition-all active:scale-95">
-                    <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <span class="hidden sm:inline">Atualizar</span>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="p-2.5 rounded-lg bg-emerald-50 text-emerald-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Últimas 24h</p>
+                    <p id="metric-24h" class="text-xl font-bold text-slate-900">-</p>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="p-2.5 rounded-lg bg-indigo-50 text-indigo-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Últimos 3 dias</p>
+                    <p id="metric-3d" class="text-xl font-bold text-slate-900">-</p>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                <div class="p-2.5 rounded-lg bg-amber-50 text-amber-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Match Excelente (≥90%)</p>
+                    <p id="metric-match" class="text-xl font-bold text-slate-900">-</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pipeline Header & Primary CTA -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
+            <div>
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Radar de Vagas</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Oportunidades recentes extraídas automaticamente com base no seu perfil.</p>
+            </div>
+            
+            <!-- Botão Atualizar Vagas -->
+            <button onclick="crawlJobs()" id="refresh-btn" aria-label="Atualizar Vagas" class="inline-flex items-center justify-center gap-2.5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transition-all active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed">
+                <svg id="refresh-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span id="refresh-btn-text" class="whitespace-nowrap font-medium">Atualizar Vagas</span>
+            </button>
+        </div>
+
+        <!-- Filter & Search Controls Bar -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <!-- Time Interval Segmented Control -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+                <button type="button" onclick="setIntervalFilter('24h')" id="filter-24h" class="px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all bg-white text-slate-900 shadow-sm">
+                    Últimas 24h
+                </button>
+                <button type="button" onclick="setIntervalFilter('3d')" id="filter-3d" class="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-md transition-all">
+                    Últimos 3 dias
+                </button>
+                <button type="button" onclick="setIntervalFilter('all')" id="filter-all" class="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-md transition-all">
+                    Todas
+                </button>
+            </div>
+
+            <!-- Stack Filters -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                <button type="button" onclick="setStackFilter('all')" id="stack-all" class="px-3 py-1 text-xs font-medium rounded-full bg-slate-900 text-white transition-all whitespace-nowrap">
+                    Todas as Stacks
+                </button>
+                <button type="button" onclick="setStackFilter('php')" id="stack-php" class="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all whitespace-nowrap">
+                    PHP / Laravel
+                </button>
+                <button type="button" onclick="setStackFilter('node')" id="stack-node" class="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all whitespace-nowrap">
+                    Node.js / Express
+                </button>
+            </div>
+
+            <!-- Quick Search Input -->
+            <div class="relative min-w-[240px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input type="search" id="search-input" oninput="handleSearch(this.value)" placeholder="Filtrar por cargo ou empresa..." class="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                <button id="search-clear" onclick="clearSearch()" class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
         </div>
 
         <!-- Feedback Alert (Error) -->
-        <div id="error-alert" class="hidden mb-6 rounded-lg bg-red-50 p-4 border border-red-200">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <div id="error-alert" class="hidden rounded-xl bg-red-50 p-4 border border-red-200 shadow-sm" role="alert">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 mt-0.5">
+                    <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                     </svg>
                 </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-red-800">Falha ao carregar as vagas</h3>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-semibold text-red-800">Falha ao processar as vagas</h3>
                     <div id="error-message" class="mt-1 text-sm text-red-700"></div>
                 </div>
+                <button onclick="document.getElementById('error-alert').classList.add('hidden')" class="text-red-400 hover:text-red-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
         </div>
         
         <!-- Skeleton Loading State -->
         <div id="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Injecting 6 skeleton cards -->
             <script>
                 for(let i=0; i<6; i++) {
                     document.write(`
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col h-[220px]">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="skeleton h-6 bg-slate-200 rounded w-3/4"></div>
-                                <div class="skeleton h-5 bg-slate-100 rounded w-16"></div>
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-[240px]">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="skeleton h-4 bg-slate-200 rounded w-28"></div>
+                                <div class="skeleton h-5 bg-slate-100 rounded-full w-20"></div>
                             </div>
+                            <div class="skeleton h-5 bg-slate-200 rounded w-3/4 mb-3"></div>
                             <div class="skeleton h-4 bg-slate-100 rounded w-1/2 mb-4"></div>
-                            <div class="mt-auto space-y-3">
-                                <div class="skeleton h-3 bg-slate-100 rounded w-2/3"></div>
-                                <div class="skeleton h-3 bg-slate-100 rounded w-1/3"></div>
+                            <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
+                                <div class="skeleton h-4 bg-slate-100 rounded w-1/3"></div>
+                                <div class="skeleton h-7 bg-slate-200 rounded-lg w-24"></div>
                             </div>
                         </div>
                     `);
@@ -88,59 +179,107 @@
         </div>
         
         <!-- Empty State -->
-        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-24 px-4 text-center rounded-2xl bg-white border border-dashed border-slate-300">
-            <div class="h-20 w-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012-2v2M7 7h10"></path></svg>
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl bg-white border border-dashed border-slate-300">
+            <div class="h-16 w-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 text-blue-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012-2v2M7 7h10"></path></svg>
             </div>
-            <h3 class="mt-2 text-lg font-semibold text-slate-900">Nenhuma vaga por aqui</h3>
-            <p class="mt-1 text-sm text-slate-500 max-w-sm">
-                O banco de dados de vagas está vazio no momento. Execute o processo do Crawler através da API para coletar novas oportunidades.
+            <h3 class="text-base font-bold text-slate-900">Nenhuma vaga encontrada</h3>
+            <p id="empty-message" class="mt-1.5 text-sm text-slate-500 max-w-sm">
+                Nenhuma oportunidade localizada para os filtros atuais. Clique em "Atualizar Vagas" para varrer novas vagas nas plataformas integradas.
             </p>
-            <div class="mt-6">
-                <a href="/docs/" class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-                    Ir para API Docs
-                </a>
+            <div class="mt-5 flex gap-3">
+                <button onclick="resetFilters()" class="inline-flex items-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors">
+                    Limpar Filtros
+                </button>
+                <button onclick="crawlJobs()" class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 shadow-sm transition-colors">
+                    Atualizar Vagas Agora
+                </button>
             </div>
         </div>
 
         <!-- Jobs Grid -->
         <div id="jobs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
-            <!-- Cards rendered here -->
+            <!-- Cards rendered dynamically -->
         </div>
 
     </main>
 
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
     <script>
+        // State
+        let currentInterval = '24h';
+        let currentStack = 'all';
+        let currentSearch = '';
+        let allJobsData = [];
+
         // Source logo badges mapping
         const sourceStyles = {
-            'linkedin': 'bg-blue-100 text-blue-700 border-blue-200',
-            'indeed': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-            'gupy': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-            'geekhunter': 'bg-purple-100 text-purple-700 border-purple-200',
-            'programathor': 'bg-teal-100 text-teal-700 border-teal-200',
-            'vagas': 'bg-sky-100 text-sky-700 border-sky-200',
-            'glassdoor': 'bg-green-100 text-green-700 border-green-200',
-            'solides': 'bg-cyan-100 text-cyan-700 border-cyan-200',
-            'catho': 'bg-rose-100 text-rose-700 border-rose-200',
-            'infojobs': 'bg-orange-100 text-orange-700 border-orange-200',
-            'jooble': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-            'jobbol': 'bg-slate-200 text-slate-800 border-slate-300',
-            'trampos': 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200',
+            'linkedin': 'bg-sky-50 text-sky-700 border-sky-200',
+            'indeed': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+            'gupy': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'geekhunter': 'bg-purple-50 text-purple-700 border-purple-200',
+            'programathor': 'bg-teal-50 text-teal-700 border-teal-200',
+            'vagas': 'bg-blue-50 text-blue-700 border-blue-200',
+            'glassdoor': 'bg-green-50 text-green-700 border-green-200',
+            'solides': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+            'catho': 'bg-rose-50 text-rose-700 border-rose-200',
+            'infojobs': 'bg-orange-50 text-orange-700 border-orange-200',
+            'jooble': 'bg-yellow-50 text-yellow-800 border-yellow-200',
+            'jobbol': 'bg-slate-100 text-slate-700 border-slate-300',
+            'trampos': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
             'default': 'bg-slate-100 text-slate-700 border-slate-200'
         };
 
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' :
+                            type === 'error' ? 'bg-red-600 text-white' :
+                            'bg-slate-900 text-white';
+
+            toast.className = `${bgClass} pointer-events-auto p-4 rounded-xl shadow-lg flex items-center justify-between gap-3 text-sm font-medium transition-all duration-300 transform translate-y-4 opacity-0`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2.5">
+                    ${type === 'success' ? '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+                      type === 'error' ? '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>' :
+                      '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'}
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white ml-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate entry
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            });
+
+            // Auto dismiss after 4.5s
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+
         async function crawlJobs() {
-            const refreshIcon = document.getElementById('refresh-icon');
             const refreshBtn = document.getElementById('refresh-btn');
+            const refreshBtnText = document.getElementById('refresh-btn-text');
+            const refreshIcon = document.getElementById('refresh-icon');
             const errorAlert = document.getElementById('error-alert');
             const errorMessage = document.getElementById('error-message');
-            const interval = document.getElementById('interval-select').value;
             
             if (refreshBtn.disabled) return;
             
-            const originalText = refreshBtn.innerHTML;
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Buscando em 14 fontes...`;
+            refreshIcon.classList.add('animate-spin');
+            refreshBtnText.textContent = 'Buscando vagas em 14 fontes...';
+            showToast('Iniciando varredura automatizada nas plataformas...', 'info');
 
             try {
                 const response = await fetch('/api/crawl/all', {
@@ -148,7 +287,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         location: 'brasil',
-                        since: interval
+                        since: currentInterval
                     })
                 });
 
@@ -158,17 +297,134 @@
                     throw new Error(result.error || `Crawler falhou (${response.status})`);
                 }
                 
-                console.log(`Crawl finalizado. Vagas encontradas: ${result.data.jobs_found}, Novas: ${result.data.jobs_new}`);
+                const found = result.data?.jobs_found || 0;
+                const newly = result.data?.jobs_new || 0;
+                showToast(`Varredura concluída: ${found} vagas avaliadas (${newly} novas adicionadas)!`, 'success');
                 errorAlert.classList.add('hidden');
             } catch (err) {
                 console.error("Erro no crawler:", err);
-                errorMessage.textContent = err.message || "Não foi possível realizar o crawl. Verifique se o servidor está rodando.";
+                errorMessage.textContent = err.message || "Não foi possível realizar o crawl. Verifique o servidor.";
                 errorAlert.classList.remove('hidden');
+                showToast(err.message || 'Falha ao atualizar vagas.', 'error');
             } finally {
                 refreshBtn.disabled = false;
-                refreshBtn.innerHTML = originalText;
+                refreshIcon.classList.remove('animate-spin');
+                refreshBtnText.textContent = 'Atualizar Vagas';
                 await loadJobs();
             }
+        }
+
+        function setIntervalFilter(interval) {
+            currentInterval = interval;
+            
+            const btn24h = document.getElementById('filter-24h');
+            const btn3d = document.getElementById('filter-3d');
+            const btnAll = document.getElementById('filter-all');
+
+            [btn24h, btn3d, btnAll].forEach(btn => {
+                btn.className = 'px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-md transition-all';
+            });
+
+            const activeBtn = interval === '24h' ? btn24h : interval === '3d' ? btn3d : btnAll;
+            activeBtn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all bg-white text-slate-900 shadow-sm';
+
+            loadJobs();
+        }
+
+        function setStackFilter(stack) {
+            currentStack = stack;
+
+            const btnAll = document.getElementById('stack-all');
+            const btnPhp = document.getElementById('stack-php');
+            const btnNode = document.getElementById('stack-node');
+
+            [btnAll, btnPhp, btnNode].forEach(btn => {
+                btn.className = 'px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all whitespace-nowrap';
+            });
+
+            const activeBtn = stack === 'all' ? btnAll : stack === 'php' ? btnPhp : btnNode;
+            activeBtn.className = 'px-3 py-1 text-xs font-medium rounded-full bg-slate-900 text-white transition-all whitespace-nowrap';
+
+            renderJobs();
+        }
+
+        function handleSearch(val) {
+            currentSearch = val.trim().toLowerCase();
+            const clearBtn = document.getElementById('search-clear');
+            if (currentSearch.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderJobs();
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search-input');
+            input.value = '';
+            handleSearch('');
+        }
+
+        function resetFilters() {
+            currentStack = 'all';
+            clearSearch();
+            setIntervalFilter('24h');
+        }
+
+        function formatRelativeDate(dateStr) {
+            if (!dateStr) return 'Hoje';
+            
+            let normalizedStr = dateStr;
+            if (typeof normalizedStr === 'string' && normalizedStr.length === 10) {
+                normalizedStr += 'T12:00:00';
+            } else if (typeof normalizedStr === 'string' && normalizedStr.includes(' ')) {
+                normalizedStr = normalizedStr.replace(' ', 'T');
+            }
+
+            const date = new Date(normalizedStr);
+            if (isNaN(date.getTime())) return 'Recentemente';
+
+            const now = new Date();
+            const diffMs = now - date;
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffHours < 1) {
+                return 'Há poucos minutos';
+            }
+            if (diffHours < 24 && date.getDate() === now.getDate()) {
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `Hoje às ${hours}:${minutes}`;
+            }
+            if (diffDays === 1 || (diffHours < 48 && date.getDate() === now.getDate() - 1)) {
+                return 'Ontem';
+            }
+            if (diffDays <= 3) {
+                return `Há ${diffDays} dias`;
+            }
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function extractTechBadges(title) {
+            const tags = [];
+            const lower = (title || '').toLowerCase();
+            
+            if (lower.includes('laravel')) tags.push('Laravel');
+            else if (lower.includes('php')) tags.push('PHP');
+
+            if (lower.includes('node')) tags.push('Node.js');
+            if (lower.includes('express')) tags.push('Express');
+            if (lower.includes('nest')) tags.push('NestJS');
+            if (lower.includes('typescript') || lower.includes('ts')) tags.push('TypeScript');
+            if (lower.includes('vue')) tags.push('Vue.js');
+            if (lower.includes('docker')) tags.push('Docker');
+            if (lower.includes('fullstack') || lower.includes('full stack')) tags.push('Full-Stack');
+            if (lower.includes('senior') || lower.includes('sênior') || lower.includes('sr')) tags.push('Sênior');
+            if (lower.includes('pleno') || lower.includes('pl')) tags.push('Pleno');
+            if (lower.includes('junior') || lower.includes('júnior') || lower.includes('jr')) tags.push('Júnior');
+
+            return tags.slice(0, 3);
         }
 
         async function loadJobs() {
@@ -178,116 +434,190 @@
             const errorAlert = document.getElementById('error-alert');
             const errorMessage = document.getElementById('error-message');
             const refreshIcon = document.getElementById('refresh-icon');
-            const interval = document.getElementById('interval-select').value;
             
-            // Reset states
-            grid.innerHTML = '';
             grid.classList.add('hidden');
             empty.classList.add('hidden');
             errorAlert.classList.add('hidden');
             loading.classList.remove('hidden');
             
-            // Spin icon
             refreshIcon.classList.add('animate-spin');
 
             try {
-                // Adicionamos um tempo mínimo para dar um feedback visual (UX)
+                // Carrega até 100 vagas para permitir filtragem fluida
                 const [response] = await Promise.all([
-                    fetch(`/api/jobs?since=${interval}`),
-                    new Promise(res => setTimeout(res, 600)) 
+                    fetch(`/api/jobs?since=${currentInterval}&per_page=100`),
+                    new Promise(res => setTimeout(res, 350))
                 ]);
                 
                 const result = await response.json();
                 
                 if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
 
-                loading.classList.add('hidden');
-
-                if (!result.success || !result.data || result.data.length === 0) {
-                    empty.classList.remove('hidden');
-                    return;
-                }
-
-                grid.classList.remove('hidden');
-
-                result.data.forEach(job => {
-                    const card = document.createElement('article');
-                    card.className = 'group relative flex flex-col items-start justify-between rounded-2xl bg-white p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all duration-200';
-                    
-                    // Priorizar published_at para refletir a data real de publicação
-                    let dateStr = job.published_at || job.scraped_at || new Date().toISOString();
-                    // If it's a date-only string like "YYYY-MM-DD", JS parses it as UTC midnight.
-                    // In BRT (UTC-3), this becomes 21:00 the previous day, shifting the date backward.
-                    // Appending 'T12:00:00' forces it to be evaluated at noon local time.
-                    if (typeof dateStr === 'string' && dateStr.length === 10) {
-                        dateStr += 'T12:00:00';
-                    } else if (typeof dateStr === 'string' && dateStr.includes(' ')) {
-                        // Replace space with T to ensure cross-browser parsing (e.g. Safari)
-                        dateStr = dateStr.replace(' ', 'T');
-                    }
-                    
-                    const date = new Date(dateStr).toLocaleDateString('pt-BR');
-                    
-                    // Style badging based on source
-                    const srcStyle = sourceStyles[job.source?.toLowerCase()] || sourceStyles.default;
-                    const scoreHtml = job.compatibility_score
-                        ? `<div class="mt-2">
-                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                job.compatibility_score >= 90
-                                    ? 'bg-green-100 text-green-700 border border-green-200'
-                                    : 'bg-blue-100 text-blue-700 border border-blue-200'
-                            }">
-                                ✓ Match ${job.compatibility_score}%
-                            </span>
-                           </div>`
-                        : '';
-
-                    card.innerHTML = `
-                        <div class="flex items-center gap-x-4 text-xs w-full justify-between mb-1">
-                            <time datetime="${date}" class="text-slate-500">${date}</time>
-                            <span class="relative z-10 rounded-full border px-2.5 py-0.5 font-medium uppercase tracking-wider text-[10px] ${srcStyle}">
-                                ${job.source}
-                            </span>
-                        </div>
-                        ${scoreHtml}
-                        <div class="group relative w-full mb-3">
-                            <h3 class="mt-3 text-lg font-bold leading-6 text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                                <a href="${job.url}" target="_blank">
-                                    <span class="absolute inset-0"></span>
-                                    ${job.title}
-                                </a>
-                            </h3>
-                            <p class="mt-1 text-sm leading-6 text-blue-600 font-medium line-clamp-1">${job.company}</p>
-                        </div>
-                        <div class="mt-auto w-full pt-4 border-t border-slate-100 flex flex-col gap-2">
-                            <div class="flex items-center gap-2 text-sm text-slate-500">
-                                <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                                </svg>
-                                <span class="truncate">${job.location || 'Não especificado'}</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-sm text-slate-500">
-                                <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
-                                </svg>
-                                <span>${job.contract_type || 'Presencial/Remoto'}</span>
-                            </div>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
+                allJobsData = (result.success && Array.isArray(result.data)) ? result.data : [];
+                
+                updateMetrics();
+                renderJobs();
 
             } catch (err) {
                 loading.classList.add('hidden');
-                errorMessage.textContent = err.message || "Não foi possível conectar à API.";
+                errorMessage.textContent = err.message || "Não foi possível conectar à API de vagas.";
                 errorAlert.classList.remove('hidden');
             } finally {
+                loading.classList.add('hidden');
                 refreshIcon.classList.remove('animate-spin');
             }
         }
 
-        // Auto load
+        async function updateMetrics() {
+            try {
+                // Carregar contadores rápidos
+                const [res24h, res3d, resAll] = await Promise.all([
+                    fetch('/api/jobs?since=24h&per_page=1'),
+                    fetch('/api/jobs?since=3d&per_page=1'),
+                    fetch('/api/jobs?since=all&per_page=1')
+                ]);
+                
+                const data24h = await res24h.json();
+                const data3d = await res3d.json();
+                const dataAll = await resAll.json();
+
+                const totalAll = dataAll.meta?.total || allJobsData.length;
+                const total24h = data24h.meta?.total || 0;
+                const total3d = data3d.meta?.total || 0;
+                
+                const matchHigh = allJobsData.filter(j => (j.compatibility_score || 0) >= 90).length;
+
+                document.getElementById('metric-total').textContent = totalAll;
+                document.getElementById('metric-24h').textContent = total24h;
+                document.getElementById('metric-3d').textContent = total3d;
+                document.getElementById('metric-match').textContent = matchHigh > 0 ? matchHigh : '-';
+            } catch (e) {
+                console.warn('Erro ao atualizar métricas:', e);
+            }
+        }
+
+        function renderJobs() {
+            const grid = document.getElementById('jobs-grid');
+            const empty = document.getElementById('empty-state');
+            const emptyMessage = document.getElementById('empty-message');
+            
+            grid.innerHTML = '';
+
+            let filtered = allJobsData.filter(job => {
+                // Filtro por Stack
+                if (currentStack === 'php') {
+                    const t = (job.title || '').toLowerCase();
+                    if (!t.includes('php') && !t.includes('laravel')) return false;
+                } else if (currentStack === 'node') {
+                    const t = (job.title || '').toLowerCase();
+                    if (!t.includes('node') && !t.includes('express') && !t.includes('nest')) return false;
+                }
+
+                // Filtro por Busca Instantânea
+                if (currentSearch) {
+                    const q = currentSearch;
+                    const matchTitle = (job.title || '').toLowerCase().includes(q);
+                    const matchCompany = (job.company || '').toLowerCase().includes(q);
+                    const matchLoc = (job.location || '').toLowerCase().includes(q);
+                    if (!matchTitle && !matchCompany && !matchLoc) return false;
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+                if (currentSearch || currentStack !== 'all') {
+                    emptyMessage.textContent = 'Nenhuma vaga corresponde aos filtros ou termo de busca pesquisado.';
+                } else {
+                    emptyMessage.textContent = 'Nenhuma vaga encontrada para este período. Clique em "Atualizar Vagas" para coletar.';
+                }
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.classList.remove('hidden');
+
+            filtered.forEach(job => {
+                const card = document.createElement('article');
+                card.className = 'group relative flex flex-col items-start justify-between rounded-2xl bg-white p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-400 transition-all duration-200';
+                
+                const rawDate = job.published_at || job.scraped_at;
+                const relativeDate = formatRelativeDate(rawDate);
+                const fullDate = rawDate ? new Date(rawDate.replace(' ', 'T')).toLocaleString('pt-BR') : '';
+
+                const srcKey = (job.source || '').toLowerCase();
+                const srcStyle = sourceStyles[srcKey] || sourceStyles.default;
+
+                const score = job.compatibility_score || 0;
+                let scoreBadge = '';
+                if (score >= 90) {
+                    scoreBadge = `<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">★ ${score}% Match</span>`;
+                } else if (score >= 80) {
+                    scoreBadge = `<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">✓ ${score}% Match</span>`;
+                }
+
+                const techTags = extractTechBadges(job.title);
+                const tagsHtml = techTags.map(tag => `
+                    <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                        ${tag}
+                    </span>
+                `).join('');
+
+                const isRemote = (job.location || '').toLowerCase().includes('remoto') || 
+                                 (job.location || '').toLowerCase().includes('remote') ||
+                                 (job.title || '').toLowerCase().includes('remote') ||
+                                 (job.title || '').toLowerCase().includes('remoto');
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2 text-xs w-full justify-between mb-2">
+                        <time datetime="${rawDate || ''}" title="${fullDate}" class="text-slate-500 font-medium flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            ${relativeDate}
+                        </time>
+                        <div class="flex items-center gap-2">
+                            ${scoreBadge}
+                            <span class="rounded-full border px-2.5 py-0.5 font-semibold uppercase tracking-wider text-[10px] ${srcStyle}">
+                                ${job.source}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="w-full mb-3">
+                        <h3 class="mt-2 text-base font-bold leading-6 text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                            <a href="${job.url}" target="_blank" rel="noopener noreferrer">
+                                <span class="absolute inset-0"></span>
+                                ${job.title}
+                            </a>
+                        </h3>
+                        <p class="mt-1 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                            ${job.company || 'Empresa Confidencial'}
+                        </p>
+                    </div>
+
+                    ${tagsHtml ? `<div class="flex flex-wrap gap-1.5 mb-4">${tagsHtml}</div>` : ''}
+
+                    <div class="mt-auto w-full pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <div class="flex items-center gap-1.5 truncate max-w-[65%]">
+                            <svg class="h-4 w-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                            </svg>
+                            <span class="truncate">${job.location || (isRemote ? 'Remoto / Brasil' : 'Brasil')}</span>
+                        </div>
+                        <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="relative z-10 inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                            Ver vaga
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Auto load on start
         document.addEventListener('DOMContentLoaded', loadJobs);
     </script>
 </body>

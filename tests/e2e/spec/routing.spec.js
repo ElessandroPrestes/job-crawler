@@ -21,4 +21,11 @@ test.describe('Nginx Routing and Dashboard UI', () => {
         expect(page.url()).toBe('http://localhost:8080/docs/');
         await expect(page.locator('#swagger-ui')).toBeVisible();
     });
+
+    test('Dashboard should display "Atualizar Vagas" button with visible label', async ({ page }) => {
+        await page.goto('/');
+        const refreshBtn = page.locator('#refresh-btn');
+        await expect(refreshBtn).toBeVisible();
+        await expect(refreshBtn).toContainText('Atualizar Vagas');
+    });
 });
