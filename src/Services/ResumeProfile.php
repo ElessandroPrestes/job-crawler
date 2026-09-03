@@ -13,6 +13,14 @@ namespace App\Services;
 final class ResumeProfile
 {
     /**
+     * Termos de busca automatizados baseados no currículo.
+     */
+    public const SEARCH_TERMS = [
+        'desenvolvedor php',
+        'desenvolvedor node.js',
+    ];
+
+    /**
      * Skills com peso de relevância (1–10).
      *
      * 10 = obrigatório / core

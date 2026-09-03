@@ -39,7 +39,6 @@
                 <p class="text-sm text-slate-500 mt-1">Oportunidades recentes extraídas automaticamente.</p>
             </div>
             <div class="flex items-center gap-2">
-                <input type="text" id="keyword-input" class="rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 w-48 sm:w-64 placeholder-slate-400" placeholder="Ex: desenvolvedor node.js" value="desenvolvedor node.js">
                 <select id="interval-select" class="rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500" onchange="loadJobs()">
                     <option value="24h">Últimas 24h</option>
                     <option value="3d">Últimos 3 dias</option>
@@ -136,7 +135,6 @@
             const errorAlert = document.getElementById('error-alert');
             const errorMessage = document.getElementById('error-message');
             const interval = document.getElementById('interval-select').value;
-            const keywordValue = document.getElementById('keyword-input').value.trim() || 'desenvolvedor node.js';
             
             if (refreshBtn.disabled) return;
             
@@ -149,7 +147,6 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        keyword: keywordValue,
                         location: 'brasil',
                         since: interval
                     })

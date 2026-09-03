@@ -64,7 +64,6 @@ final class MultiSourceCrawlerService
      */
     public function executeAll(array $params): array
     {
-        $keyword  = $params['keyword'] ?? 'php laravel node.js typescript backend';
         $location = $params['location'] ?? 'brasil';
         $maxPages = min((int) ($params['max_pages'] ?? 2), App::crawlMaxPages());
 
@@ -74,44 +73,56 @@ final class MultiSourceCrawlerService
         $bySource    = [];
         $errors      = [];
 
-        foreach (self::SOURCES_BY_TIER as $source) {
-            $start = microtime(true);
-            try {
-                $result = $this->crawlerService->execute([
-                    'source'    => $source,
-                    'keyword'   => $keyword,
-                    'location'  => $location,
-                    'max_pages' => $maxPages,
-                ]);
+        foreach (ResumeProfile::SEARCH_TERMS as $keyword) {
+            foreach (self::SOURCES_BY_TIER as $source) {
+                $start = microtime(true);
+                try {
+                    $result = $this->crawlerService->execute([
+                        'source'    => $source,
+                        'keyword'   => $keyword,
+                        'location'  => $location,
+                        'max_pages' => $maxPages,
+                    ]);
 
-                $bySource[$source] = [
-                    'status'     => 'success',
-                    'jobs_found' => $result['jobs_found'],
-                    'jobs_new'   => $result['jobs_new'],
-                    'duration_ms'=> $result['duration_ms'],
-                ];
+                    if (!isset($bySource[$source])) {
+                        $bySource[$source] = [
+                            'status'     => 'success',
+                            'jobs_found' => 0,
+                            'jobs_new'   => 0,
+                            'duration_ms'=> 0,
+                        ];
+                    }
 
-                $totalFound += $result['jobs_found'];
-                $totalNew   += $result['jobs_new'];
+                    $bySource[$source]['jobs_found']  += $result['jobs_found'];
+                    $bySource[$source]['jobs_new']    += $result['jobs_new'];
+                    $bySource[$source]['duration_ms'] += $result['duration_ms'];
 
-            } catch (CrawlerException $e) {
-                $errors[]          = "[{$source}] " . $e->getMessage();
-                $bySource[$source] = [
-                    'status'      => 'error',
-                    'jobs_found'  => 0,
-                    'jobs_new'    => 0,
-                    'duration_ms' => (int) ((microtime(true) - $start) * 1000),
-                    'error'       => $e->getMessage(),
-                ];
-            } catch (\Throwable $e) {
-                $errors[]          = "[{$source}] Erro inesperado: " . $e->getMessage();
-                $bySource[$source] = [
-                    'status'      => 'error',
-                    'jobs_found'  => 0,
-                    'jobs_new'    => 0,
-                    'duration_ms' => (int) ((microtime(true) - $start) * 1000),
-                    'error'       => $e->getMessage(),
-                ];
+                    $totalFound += $result['jobs_found'];
+                    $totalNew   += $result['jobs_new'];
+
+                } catch (CrawlerException $e) {
+                    $errors[] = "[{$source} | {$keyword}] " . $e->getMessage();
+                    if (!isset($bySource[$source])) {
+                        $bySource[$source] = [
+                            'status'      => 'error',
+                            'jobs_found'  => 0,
+                            'jobs_new'    => 0,
+                            'duration_ms' => (int) ((microtime(true) - $start) * 1000),
+                            'error'       => $e->getMessage(),
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = "[{$source} | {$keyword}] Erro inesperado: " . $e->getMessage();
+                    if (!isset($bySource[$source])) {
+                        $bySource[$source] = [
+                            'status'      => 'error',
+                            'jobs_found'  => 0,
+                            'jobs_new'    => 0,
+                            'duration_ms' => (int) ((microtime(true) - $start) * 1000),
+                            'error'       => $e->getMessage(),
+                        ];
+                    }
+                }
             }
         }
 
