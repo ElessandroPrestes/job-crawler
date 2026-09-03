@@ -194,7 +194,9 @@ final class JobRepository
                 ON CONFLICT(company_normalized, title_normalized) DO UPDATE SET
                     scraped_at          = excluded.scraped_at,
                     compatibility_score = COALESCE(excluded.compatibility_score, compatibility_score),
-                    matched_skills      = COALESCE(excluded.matched_skills, matched_skills)
+                    matched_skills      = COALESCE(excluded.matched_skills, matched_skills),
+                    source              = CASE WHEN excluded.published_at < jobs.published_at OR jobs.published_at IS NULL THEN excluded.source ELSE jobs.source END,
+                    published_at        = CASE WHEN excluded.published_at < jobs.published_at OR jobs.published_at IS NULL THEN excluded.published_at ELSE jobs.published_at END
             ';
         } else {
             $params = [
@@ -224,7 +226,9 @@ final class JobRepository
                 ON DUPLICATE KEY UPDATE
                     scraped_at          = NOW(),
                     compatibility_score = COALESCE(VALUES(compatibility_score), compatibility_score),
-                    matched_skills      = COALESCE(VALUES(matched_skills), matched_skills)
+                    matched_skills      = COALESCE(VALUES(matched_skills), matched_skills),
+                    source              = IF(VALUES(published_at) < published_at OR published_at IS NULL, VALUES(source), source),
+                    published_at        = IF(VALUES(published_at) < published_at OR published_at IS NULL, VALUES(published_at), published_at)
             ';
         }
 

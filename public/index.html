@@ -215,8 +215,8 @@
                     const card = document.createElement('article');
                     card.className = 'group relative flex flex-col items-start justify-between rounded-2xl bg-white p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all duration-200';
                     
-                    // Priorizar scraped_at para refletir a data em que a vaga foi coletada (pipeline)
-                    let dateStr = job.scraped_at || job.published_at || new Date().toISOString();
+                    // Priorizar published_at para refletir a data real de publicação
+                    let dateStr = job.published_at || job.scraped_at || new Date().toISOString();
                     // If it's a date-only string like "YYYY-MM-DD", JS parses it as UTC midnight.
                     // In BRT (UTC-3), this becomes 21:00 the previous day, shifting the date backward.
                     // Appending 'T12:00:00' forces it to be evaluated at noon local time.
