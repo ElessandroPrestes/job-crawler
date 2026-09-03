@@ -60,15 +60,15 @@ final class JobRepository
 
         if ($interval === '3d') {
             if ($isSqlite) {
-                $where[] = 'scraped_at >= datetime("now", "-3 days")';
+                $where[] = 'COALESCE(published_at, scraped_at) >= datetime("now", "-3 days")';
             } else {
-                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
+                $where[] = 'COALESCE(published_at, scraped_at) >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
             }
         } else {
             if ($isSqlite) {
-                $where[] = 'scraped_at >= datetime("now", "-1 day")';
+                $where[] = 'COALESCE(published_at, scraped_at) >= datetime("now", "-1 day")';
             } else {
-                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+                $where[] = 'COALESCE(published_at, scraped_at) >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
             }
         }
 
@@ -120,15 +120,15 @@ final class JobRepository
 
         if ($interval === '3d') {
             if ($isSqlite) {
-                $where[] = 'scraped_at >= datetime("now", "-3 days")';
+                $where[] = 'COALESCE(published_at, scraped_at) >= datetime("now", "-3 days")';
             } else {
-                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
+                $where[] = 'COALESCE(published_at, scraped_at) >= DATE_SUB(NOW(), INTERVAL 3 DAY)';
             }
         } else {
             if ($isSqlite) {
-                $where[] = 'scraped_at >= datetime("now", "-1 day")';
+                $where[] = 'COALESCE(published_at, scraped_at) >= datetime("now", "-1 day")';
             } else {
-                $where[] = 'scraped_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
+                $where[] = 'COALESCE(published_at, scraped_at) >= DATE_SUB(NOW(), INTERVAL 1 DAY)';
             }
         }
 
