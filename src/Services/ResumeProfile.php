@@ -190,12 +190,9 @@ final class ResumeProfile
 
     /**
      * Peso de referência para normalização do score.
-     * Representa a soma das top-8 skills core do perfil:
-     * php(10) + laravel(10) + node.js(9) + typescript(8) + aws(8) + docker(8) + mysql(7) + redis(7) = 67
-     *
-     * Uma vaga que menciona todas essas skills → score 100%.
-     * Uma vaga que menciona php + laravel + docker + mysql + redis + rabbitmq → ~74% (FAIL, ok).
-     * Uma vaga que menciona php + laravel + docker + mysql + redis + rabbitmq + node.js → ~88% (PASS).
+     * Representa uma stack realista única (ex: Node.js + APIs + CI/CD ou PHP + Laravel + MySQL).
+     * O valor anterior (67) exigia que a vaga pedisse PHP e Node.js simultaneamente,
+     * reprovando vagas ótimas (ex: 100% Node.js).
      */
-    public const SCORE_BASELINE = 67;
+    public const SCORE_BASELINE = 35;
 }

@@ -35,6 +35,7 @@ O sistema possui crawling multi-fonte (LinkedIn, Indeed), API RESTful com listag
 - **[Bugfix/SPEC-016]** Sincronização do Filtro de Data: Corrigido o filtro de vagas de 24h/3d no `JobRepository` para avaliar a data real de publicação (`published_at`) em vez da data de coleta (`scraped_at`), garantindo consistência visual no dashboard.
 - **[Feature/SPEC-019]** Busca Automatizada Baseada no Currículo: O crawler agora itera automaticamente sobre os cargos principais do currículo (`desenvolvedor php`, `desenvolvedor node.js`) em todas as plataformas, sem exigir que o usuário digite os termos manualmente. A interface foi revertida para o modo "One-Click" (input removido), garantindo que apenas vagas aderentes (>= 80% de score) sejam listadas.
 - **[Bugfix/SPEC-018]** Relaxamento de Desqualificação no Scorer: Removida a desqualificação sumária de vagas Full-Stack que mencionavam tecnologias do ecossistema React (`next.js`, etc.) no corpo do texto, evitando que vagas adequadas fossem ocultadas indevidamente do pipeline.
+- **[Bugfix/SPEC-020]** Ajuste da Linha de Base do Scorer e Ordenação Recente: A base de cálculo do `CompatibilityScorer` foi ajustada para pontuar adequadamente vagas focadas em apenas uma stack do currículo (Node.js OU PHP). O driver do LinkedIn foi forçado a usar a ordenação cronológica (`sortBy=DD`) para que as primeiras vagas coletadas sejam sempre as postadas nas últimas horas.
 
 ### Decisões Arquiteturais Vigentes
 - Banco de dados relacional MySQL 8.0 para armazenamento de vagas e configurações de alertas.

@@ -75,6 +75,7 @@ final class LinkedInDriver
             'f_WT'     => '2',
             'f_TPR'    => 'r259200', // 3 dias, a view cuida de filtrar 24h
             'geoId'    => self::BRAZIL_GEO_ID, // padrão: Brasil
+            'sortBy'   => 'DD', // Sort by date (recent first)
         ];
 
         if ($location) {
