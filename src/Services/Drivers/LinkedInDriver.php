@@ -112,11 +112,39 @@ final class LinkedInDriver
             try {
                 $timeNode = $node->filter('time');
                 if ($timeNode->count() > 0) {
-                    $dt = $timeNode->attr('datetime');
-                    if ($dt) {
-                        $ts = strtotime($dt);
+                    $text = strtolower(trim($timeNode->text('')));
+                    $map = [
+                        'segundo' => 'second', 'segundos' => 'seconds',
+                        'minuto' => 'minute', 'minutos' => 'minutes',
+                        'hora' => 'hour', 'horas' => 'hours',
+                        'dia' => 'day', 'dias' => 'days',
+                        'semana' => 'week', 'semanas' => 'weeks',
+                        'mês' => 'month', 'meses' => 'months',
+                        'ano' => 'year', 'anos' => 'years',
+                    ];
+                    $text = str_replace(['há ', ' atrás', 'ago', 'posted', '+'], '', $text);
+                    $text = trim($text);
+                    
+                    $parts = explode(' ', $text);
+                    if (count($parts) >= 2) {
+                        $num = (int)$parts[0];
+                        $unit = $parts[1];
+                        if (isset($map[$unit])) {
+                            $unit = $map[$unit];
+                        }
+                        $ts = strtotime("-{$num} {$unit}");
                         if ($ts !== false) {
                             $publishedAt = date('Y-m-d H:i:s', $ts);
+                        }
+                    }
+
+                    if (!$publishedAt) {
+                        $dt = $timeNode->attr('datetime');
+                        if ($dt) {
+                            $ts = strtotime($dt);
+                            if ($ts !== false) {
+                                $publishedAt = date('Y-m-d H:i:s', $ts);
+                            }
                         }
                     }
                 }

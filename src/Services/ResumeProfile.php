@@ -39,6 +39,8 @@ final class ResumeProfile
         'node'               => 9,
         'nodejs'             => 9,
         'express'            => 7,
+        'nestjs'             => 7,
+        'nest'               => 6,
 
         // Languages
         'typescript'         => 8,
@@ -52,6 +54,8 @@ final class ResumeProfile
         'mongodb'            => 5,
         'oracle'             => 5,
         'sql server'         => 4,
+        'bancos de dados relacionais' => 5,
+        'relacional'         => 4,
 
         // Messaging
         'rabbitmq'           => 7,
@@ -67,19 +71,23 @@ final class ResumeProfile
         'docker'             => 8,
         'kubernetes'         => 6,
         'k8s'                => 6,
+        'cloud'              => 5,
 
         // CI/CD
         'github actions'     => 6,
         'gitlab'             => 6,
         'ci/cd'              => 6,
         'devops'             => 6,
+        'git'                => 5,
 
         // Architecture
         'microsserviços'     => 8,
         'microservices'      => 8,
         'api rest'           => 8,
+        'apis rest'          => 8,
         'rest api'           => 8,
         'restful'            => 7,
+        'graphql'            => 6,
         'event-driven'       => 7,
         'event driven'       => 7,
         'serverless'         => 6,
